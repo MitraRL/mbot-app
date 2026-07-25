@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Турнирная сетка</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body class="bg-slate-900 text-white p-4 font-sans antialiased min-h-screen">
+  <div class="max-w-md mx-auto">
+    
+    <h1 class="text-2xl font-bold text-center mt-2 text-slate-100">Сетка турнира</h1>
+    <p id="player-greeting" class="text-center text-blue-400 mb-6 font-semibold h-6"></p>
+    
+    <div class="flex overflow-x-auto space-x-2 pb-2 mb-6">
+      <button class="px-5 py-2.5 rounded-full text-sm font-semibold bg-blue-500 text-white">1/8 финала</button>
+      <button class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400">1/4 финала</button>
+    </div>
+
+    <div class="space-y-4 mb-8">
+      <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700/50 shadow-sm opacity-50">
+        <div class="text-center text-xs text-slate-400 mb-2">Тестовый матч</div>
+        <div class="flex justify-between items-center font-bold text-slate-300">
+          <span>Игрок 1</span> <span>- : -</span> <span>Игрок 2</span>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="text-lg font-bold mb-4 text-slate-200">🏆 Участники турнира:</h2>
+    <div id="db-players" class="space-y-2 text-slate-300">
+      <div class="text-center py-4 animate-pulse">Синхронизация с базой...</div>
+    </div>
+
+  </div>
+
+  <script>
+    window.Telegram.WebApp.ready();
+    window.Telegram.WebApp.expand();
+
+    const tgUser = window.Telegram.WebApp.initDataUnsafe?.user;
+    const username = (tgUser && tgUser.username) ? tgUser.username : 'slavlen';
+    const telegramId = (tgUser && tgUser.id) ? tgUser.id : Math.floor(Math.random() * 1000000);
+
+    document.getElementById('player-greeting').innerText = `Привет, @${username}!`;
+
+    const SUPABASE_URL = 'https://kvsrxuibrovumaikqptk.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2c3J4dWlicm92dW1haWtxcHRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4Nzc0NTYsImV4cCI6MjEwMDQ1MzQ1Nn0.uKkIbZi7I0Q0jL0oMMq5k4ABQ_ge18yJo7tYSB_PYRI';
+
+    async function syncAndLoad() {
+      const container = document.getElementById('db-players');
+      
+      try {
+        const headers = {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'resolution=merge-duplicates'
+        };
+
+        await fetch(`${SUPABASE_URL}/rest/v1/users`, {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({
+            telegram_id: telegramId,
+            username: username
+          })
+        });
+
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/users?select=*`, {
+          method: 'GET',
+          headers: headers
+        });
+
+        if (!response.ok) throw new Error(`Ошибка сервера: ${response.status}`);
+
+        const data = await response.json();
+        
+        if (data && data.length > 0) {
+          container.innerHTML = data.map(user => {
+            const name = user.username || user.name || user.login || 'Участник';
+            return `
+              <div class="bg-slate-800 p-4 rounded-xl border border-slate-700/50 shadow-sm flex items-center">
+                <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 text-blue-400">⚽</div>
+                <span class="font-semibold text-slate-200">@${name}</span>
+              </div>
+            `;
+          }).join('');
+        } else {
+          container.innerHTML = '<div class="text-red-400 text-center py-4">Список пуст.</div>';
+        }
+
+      } catch (err) {
+        container.innerHTML = `<div class="bg-red-900/50 p-3 rounded text-red-200 text-xs">Ошибка: ${err.message}</div>`;
+      }
+    }
+
+    syncAndLoad();
+  </script>
+</body>
+</html>
