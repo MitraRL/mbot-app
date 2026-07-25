@@ -58,6 +58,7 @@
           'Prefer': 'resolution=merge-duplicates'
         };
 
+        // 1. Принудительно отправляем себя в таблицу прямо со страницы
         await fetch(`${SUPABASE_URL}/rest/v1/users`, {
           method: 'POST',
           headers: headers,
@@ -67,6 +68,7 @@
           })
         });
 
+        // 2. Сразу запрашиваем список всех игроков заново
         const response = await fetch(`${SUPABASE_URL}/rest/v1/users?select=*`, {
           method: 'GET',
           headers: headers
