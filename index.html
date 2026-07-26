@@ -12,13 +12,12 @@
     
     <h1 class="text-2xl font-bold text-center mt-2 mb-6 text-slate-100">Сетка турнира</h1>
     
-    <!-- Скрытая панель администратора (появится только у тебя) -->
+    <!-- Скрытая панель администратора -->
     <div id="admin-panel" class="hidden bg-slate-800/80 border border-blue-500/40 rounded-2xl p-4 mb-6 shadow-lg">
       <h2 class="text-sm font-bold text-blue-400 mb-3 flex items-center">
         👑 Панель организатора
       </h2>
       
-      <!-- Форма создания матча -->
       <div class="space-y-3">
         <div class="grid grid-cols-2 gap-2">
           <input id="new-p1" type="text" placeholder="Игрок 1" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
@@ -36,7 +35,7 @@
       </div>
     </div>
 
-    <!-- Настройки профиля: Смена никнейма -->
+    <!-- Настройки профиля -->
     <div class="bg-slate-800 rounded-2xl p-4 mb-6 border border-slate-700/50 shadow-sm">
       <p class="text-sm text-slate-400 mb-2">Твое имя в таблице:</p>
       <div class="flex space-x-2">
@@ -46,7 +45,7 @@
       <p id="save-msg" class="text-xs text-green-400 mt-2 hidden">Ник успешно обновлен!</p>
     </div>
     
-    <!-- Интерактивные кнопки стадий турнира -->
+    <!-- Вкладки раундов -->
     <div class="flex overflow-x-auto space-x-2 pb-2 mb-6" id="round-buttons">
       <button onclick="setRound('1/8 финала')" id="btn-1-8" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-blue-500 text-white transition">1/8 финала</button>
       <button onclick="setRound('1/4 финала')" id="btn-1-4" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition">1/4 финала</button>
@@ -54,12 +53,14 @@
       <button onclick="setRound('Финал')" id="btn-final" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition">Финал</button>
     </div>
 
+    <!-- Матчи -->
     <div id="db-matches" class="space-y-4 mb-8">
       <div class="text-center py-4 text-slate-500 text-sm animate-pulse">Загрузка матчей...</div>
     </div>
 
-    <h2 class="text-lg font-bold mb-4 text-slate-200">🏆 Участники турнира:</h2>
-    <div id="db-players" class="space-y-2 text-slate-300">
+    <!-- Участники и статистика -->
+    <h2 class="text-lg font-bold mb-4 text-slate-200">🏆 Участники и статистика:</h2>
+    <div id="db-players" class="space-y-3 text-slate-300">
       <div class="text-center py-4 animate-pulse">Загрузка...</div>
     </div>
 
@@ -73,7 +74,6 @@
     const tgUsername = (tgUser && tgUser.username) ? tgUser.username : 'Гость';
     const telegramId = (tgUser && tgUser.id) ? tgUser.id : Math.floor(Math.random() * 1000000);
 
-    // Твой ID организатора
     const ADMIN_ID = 438290253;
 
     const SUPABASE_URL = 'https://kvsrxuibrovumaikqptk.supabase.co';
@@ -88,7 +88,6 @@
     let allMatches = [];
     let currentRound = '1/8 финала';
 
-    // Проверяем админские права при запуске
     if (telegramId === ADMIN_ID) {
       document.getElementById('admin-panel').classList.remove('hidden');
     }
@@ -141,7 +140,6 @@
       }
     }
 
-    // Создание нового матча прямо из мини-аппа
     window.createMatch = async function() {
       const p1 = document.getElementById('new-p1').value.trim();
       const p2 = document.getElementById('new-p2').value.trim();
@@ -169,7 +167,6 @@
       }
     }
 
-    // Изменение счета админскими кнопками
     window.changeScore = async function(matchId, s1, s2) {
       try {
         await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, {
@@ -201,7 +198,7 @@
           await fetch(`${SUPABASE_URL}/rest/v1/users`, {
             method: 'POST',
             headers: { ...baseHeaders, 'Prefer': 'resolution=merge-duplicates' },
-            body: JSON.stringify({ id: telegramId, username: tgUsername })
+            body: JSON.stringify({ id: telegramId, username: tgUsername, wins: 0, losses: 0, goals_for: 0, goals_against: 0 })
           });
           response = await fetch(`${SUPABASE_URL}/rest/v1/users?select=*`, { method: 'GET', headers: baseHeaders });
           users = await response.json();
@@ -219,12 +216,21 @@
             const highlightClass = isMe ? 'border-blue-500/50 bg-blue-900/20' : 'border-slate-700/50 bg-slate-800';
             
             return `
-              <div class="p-4 rounded-xl border shadow-sm flex items-center ${highlightClass}">
-                <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 text-blue-400">⚽</div>
-                <span class="font-semibold text-slate-200">
-                  ${displayName} 
-                  ${isMe ? '<span class="text-xs text-blue-400 ml-1 font-normal">(Ты)</span>' : ''}
-                </span>
+              <div class="p-4 rounded-xl border shadow-sm ${highlightClass}">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="flex items-center">
+                    <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 text-blue-400">⚽</div>
+                    <span class="font-semibold text-slate-200">
+                      ${displayName} 
+                      ${isMe ? '<span class="text-xs text-blue-400 ml-1 font-normal">(Ты)</span>' : ''}
+                    </span>
+                  </div>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-center text-xs bg-slate-900/50 p-2 rounded-lg text-slate-400">
+                  <div>Поб/Пор: <span class="text-white font-bold">${user.wins || 0} / ${user.losses || 0}</span></div>
+                  <div>Голы: <span class="text-white font-bold">${user.goals_for || 0} : ${user.goals_against || 0}</span></div>
+                  <div>Очки: <span class="text-blue-400 font-bold">${(user.wins || 0) * 3}</span></div>
+                </div>
               </div>
             `;
           }).join('');
