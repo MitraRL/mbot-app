@@ -26,7 +26,6 @@
     <div class="max-w-md mx-auto p-4 pb-24">
       <h1 class="text-xl font-bold text-center mt-2 mb-6 text-slate-100 uppercase tracking-wider" id="page-title">Расписание матчей</h1>
 
-      <!-- ВКЛАДКА 1: МАТЧИ -->
       <div id="tab-matches" class="tab-content block">
         <div class="flex overflow-x-auto space-x-2 pb-2 mb-4 scrollbar-hide" id="round-buttons">
           <button onclick="setRound('Группы')" id="btn-groups" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-blue-500 text-white transition whitespace-nowrap shadow-lg shadow-blue-500/30">Группы</button>
@@ -39,18 +38,15 @@
         <div id="db-matches" class="space-y-4"></div>
       </div>
 
-      <!-- ВКЛАДКА 2: СЕТКА ПЛЕЙ-ОФФ -->
       <div id="tab-bracket" class="tab-content hidden">
         <div id="db-bracket" class="overflow-x-auto pb-6 pt-2 scrollbar-hide"></div>
       </div>
 
-      <!-- ВКЛАДКА 3: РЕЙТИНГ (ГРУППЫ) -->
       <div id="tab-table" class="tab-content hidden">
         <div class="text-xs text-slate-400 text-center mb-4 uppercase tracking-wider">💡 Нажми на игрока, чтобы открыть его профиль</div>
         <div id="db-players" class="space-y-6 text-slate-300"><div class="text-center py-4 animate-pulse">Загрузка рейтинга...</div></div>
       </div>
 
-      <!-- ВКЛАДКА 4: ПРОФИЛЬ -->
       <div id="tab-profile" class="tab-content hidden space-y-6">
         <div id="profile-content" class="bg-slate-800 rounded-2xl p-5 border border-slate-700/50 shadow-sm"><div class="text-center py-4 animate-pulse">Загрузка профиля...</div></div>
         
@@ -89,7 +85,6 @@
       </div>
     </div>
 
-    <!-- МОДАЛКА ПРОФИЛЯ -->
     <div id="public-profile-modal" class="hidden fixed inset-0 z-[60] bg-slate-900/90 backdrop-blur-sm flex justify-center items-end sm:items-center">
       <div class="bg-slate-800 w-full max-w-md h-[85vh] sm:h-auto sm:max-h-[90vh] rounded-t-3xl sm:rounded-3xl border-t sm:border border-slate-700 shadow-2xl flex flex-col relative">
         <button onclick="closePlayerProfile()" class="absolute top-4 right-4 bg-slate-700 hover:bg-slate-600 text-white rounded-full w-8 h-8 flex items-center justify-center transition z-10">✕</button>
@@ -97,7 +92,6 @@
       </div>
     </div>
 
-    <!-- НИЖНЕЕ МЕНЮ (4 КНОПКИ) -->
     <div class="fixed bottom-0 left-0 w-full bg-slate-900/95 backdrop-blur-md border-t border-slate-800 z-50">
       <div class="max-w-md mx-auto flex justify-around p-2 pb-safe">
         <button onclick="switchTab('matches')" id="nav-matches" class="nav-btn flex flex-col items-center p-2 text-blue-500 transition w-1/4"><span class="text-2xl mb-1">⚽</span><span class="text-[10px] font-medium">Матчи</span></button>
@@ -158,10 +152,21 @@
     }
     window.closePlayerProfile = function() { document.getElementById('public-profile-modal').classList.add('hidden'); }
 
+    // ИСПРАВЛЕНИЕ 1: АВТО-ОБНОВЛЕНИЕ ИМЕНИ ВО ВСЕХ МАТЧАХ, ЕСЛИ ИГРОК ПОМЕНЯЛ НИК В НАСТРОЙКАХ
     window.saveProfile = async function() {
       const newName = document.getElementById('profile-nickname').value.trim(); const newPlat = document.getElementById('profile-platform').value;
-      if (!newName) return alert('Имя не может быть пустым!');
-      await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${telegramId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ username: newName, platform: newPlat }) }); alert('Настройки обновлены!'); await loadTournament();
+      if (!newName) return Telegram.WebApp.showAlert('Имя не может быть пустым!');
+      
+      let oldName = getMyName();
+      await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${telegramId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ username: newName, platform: newPlat }) });
+      
+      if (oldName && oldName !== newName) {
+        await fetch(`${SUPABASE_URL}/rest/v1/matches?player1=eq.${oldName}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ player1: newName }) });
+        await fetch(`${SUPABASE_URL}/rest/v1/matches?player2=eq.${oldName}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ player2: newName }) });
+        await fetch(`${SUPABASE_URL}/rest/v1/matches?proposed_by=eq.${oldName}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ proposed_by: newName }) });
+      }
+      
+      Telegram.WebApp.showAlert('Настройки профиля обновлены!'); await loadTournament();
     }
 
     window.switchTab = function(tabName) {
@@ -179,13 +184,9 @@
 
     window.setRound = function(roundName) {
       currentRound = roundName;
-      document.querySelectorAll('#round-buttons button').forEach(btn => { 
-        btn.className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap'; 
-      });
+      document.querySelectorAll('#round-buttons button').forEach(btn => { btn.className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap'; });
       let actId = (roundName === 'Группы') ? 'btn-groups' : (roundName === '1/16 финала') ? 'btn-1-16' : (roundName === '1/8 финала') ? 'btn-1-8' : (roundName === '1/4 финала') ? 'btn-1-4' : (roundName === 'Полуфинал') ? 'btn-semi' : (roundName === 'Финал') ? 'btn-final' : '';
-      if (actId) { 
-        document.getElementById(actId).className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-blue-500 text-white transition whitespace-nowrap shadow-lg shadow-blue-500/30'; 
-      }
+      if (actId) document.getElementById(actId).className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-blue-500 text-white transition whitespace-nowrap shadow-lg shadow-blue-500/30'; 
       editModeMatchId = null; proposeModeMatchId = null; renderMatches();
     }
 
@@ -250,37 +251,52 @@
       }).join('');
     }
 
+    // ИСПРАВЛЕНИЕ 2: ИСПОЛЬЗОВАНИЕ НАТИВНЫХ ОКОН TELEGRAM (Telegram.WebApp.showConfirm и showAlert)
     window.openProposeMode = function(matchId) { proposeModeMatchId = matchId; renderMatches(); }
     window.cancelProposeMode = function() { proposeModeMatchId = null; renderMatches(); }
     
     window.submitPropose = async function(matchId) {
       let myName = getMyName();
       let s1 = document.getElementById(`prop-s1-${matchId}`).value; let s2 = document.getElementById(`prop-s2-${matchId}`).value;
-      if (s1 === '' || s2 === '') return alert('Введите счет для обоих игроков!');
+      if (s1 === '' || s2 === '') return Telegram.WebApp.showAlert('Введите счет для обоих игроков!');
       await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ proposed_score1: parseInt(s1), proposed_score2: parseInt(s2), proposed_by: myName }) });
       let m = allMatches.find(x => x.id === matchId); let opp = (m.player1 === myName) ? m.player2 : m.player1;
       await sendNotification(opp, `⚠️ Соперник ввел счет матча (${s1}:${s2}). Зайди в турнир и подтверди его!`);
       proposeModeMatchId = null; await loadTournament();
     }
     
-    window.rejectScore = async function(matchId) {
-      if(!confirm('Отменить предложенный счет?')) return;
-      await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ proposed_score1: null, proposed_score2: null, proposed_by: null }) });
-      await loadTournament();
+    window.rejectScore = function(matchId) {
+      Telegram.WebApp.showConfirm('Отменить этот предложенный счет?', async function(confirmed) {
+        if(confirmed) {
+          await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ proposed_score1: null, proposed_score2: null, proposed_by: null }) });
+          await loadTournament();
+        }
+      });
     }
     
-    window.confirmScorePlayer = async function(matchId, p1Name, p2Name, s1, s2) {
-      if (!confirm(`Подтверждаешь счет ${s1}:${s2}? Матч будет завершен.`)) return;
-      await finishMatch(matchId, p1Name, p2Name, s1, s2, true);
+    window.confirmScorePlayer = function(matchId, p1Name, p2Name, s1, s2) {
+      Telegram.WebApp.showConfirm(`Подтверждаешь счет ${s1}:${s2}? Матч будет завершен.`, function(confirmed) {
+        if (confirmed) executeFinishMatch(matchId, p1Name, p2Name, s1, s2);
+      });
     }
 
     window.editMatchMode = function(id) { editModeMatchId = id; renderMatches(); }
     window.cancelEdit = function() { editModeMatchId = null; renderMatches(); }
     window.saveMatchEdit = async function(id) { const p1 = document.getElementById(`edit-p1-${id}`).value; const p2 = document.getElementById(`edit-p2-${id}`).value; if(!p1||!p2)return; await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ player1: p1, player2: p2 }) }); editModeMatchId = null; await loadTournament(); }
-    window.deleteMatch = async function(id) { if(confirm('Удалить матч?')) { await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${id}`, { method: 'DELETE', headers: baseHeaders }); await loadTournament(); } }
     
-    window.finishMatch = async function(matchId, p1Name, p2Name, s1, s2, isFromPlayer = false) {
-      if (!isFromPlayer && !confirm('Завершить матч принудительно?')) return;
+    window.deleteMatch = function(id) { 
+      Telegram.WebApp.showConfirm('Удалить матч навсегда?', async function(confirmed) {
+        if(confirmed) { await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${id}`, { method: 'DELETE', headers: baseHeaders }); await loadTournament(); }
+      }); 
+    }
+    
+    window.finishMatch = function(matchId, p1Name, p2Name, s1, s2) {
+      Telegram.WebApp.showConfirm('Завершить этот матч принудительно (как Администратор)?', function(confirmed) {
+        if (confirmed) executeFinishMatch(matchId, p1Name, p2Name, s1, s2);
+      });
+    }
+
+    async function executeFinishMatch(matchId, p1Name, p2Name, s1, s2) {
       let p1 = allUsers.find(u => u.username === p1Name); let p2 = allUsers.find(u => u.username === p2Name);
       if (p1) { let w = p1.wins||0; let l = p1.losses||0; if(s1>s2) w++; if(s1<s2) l++; await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p1.id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: w, losses: l, goals_for: (p1.goals_for||0)+s1, goals_against: (p1.goals_against||0)+s2 }) }); }
       if (p2) { let w = p2.wins||0; let l = p2.losses||0; if(s2>s1) w++; if(s2<s1) l++; await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p2.id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: w, losses: l, goals_for: (p2.goals_for||0)+s2, goals_against: (p2.goals_against||0)+s1 }) }); }
@@ -289,12 +305,14 @@
       await loadTournament();
     }
     
-    window.rollbackMatch = async function(matchId, p1Name, p2Name, s1, s2) {
-      if (!confirm('Отменить завершение матча?')) return;
-      let p1 = allUsers.find(u => u.username === p1Name); let p2 = allUsers.find(u => u.username === p2Name);
-      if (p1) { let w = p1.wins||0; let l = p1.losses||0; if(s1>s2 && w>0) w--; if(s1<s2 && l>0) l--; await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p1.id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: w, losses: l, goals_for: Math.max(0, (p1.goals_for||0)-s1), goals_against: Math.max(0, (p1.goals_against||0)-s2) }) }); }
-      if (p2) { let w = p2.wins||0; let l = p2.losses||0; if(s2>s1 && w>0) w--; if(s2<s1 && l>0) l--; await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p2.id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: w, losses: l, goals_for: Math.max(0, (p2.goals_for||0)-s2), goals_against: Math.max(0, (p2.goals_against||0)-s1) }) }); }
-      await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ is_completed: false }) }); await loadTournament();
+    window.rollbackMatch = function(matchId, p1Name, p2Name, s1, s2) {
+      Telegram.WebApp.showConfirm('Отменить завершение матча и списать очки?', async function(confirmed) {
+        if (!confirmed) return;
+        let p1 = allUsers.find(u => u.username === p1Name); let p2 = allUsers.find(u => u.username === p2Name);
+        if (p1) { let w = p1.wins||0; let l = p1.losses||0; if(s1>s2 && w>0) w--; if(s1<s2 && l>0) l--; await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p1.id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: w, losses: l, goals_for: Math.max(0, (p1.goals_for||0)-s1), goals_against: Math.max(0, (p1.goals_against||0)-s2) }) }); }
+        if (p2) { let w = p2.wins||0; let l = p2.losses||0; if(s2>s1 && w>0) w--; if(s2<s1 && l>0) l--; await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p2.id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: w, losses: l, goals_for: Math.max(0, (p2.goals_for||0)-s2), goals_against: Math.max(0, (p2.goals_against||0)-s1) }) }); }
+        await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ is_completed: false }) }); await loadTournament();
+      });
     }
     
     window.createMatch = async function() {
@@ -307,72 +325,73 @@
     window.changeScore = async function(matchId, s1, s2, p1Name, p2Name) { await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ score1: s1, score2: s2 }) }); await loadTournament(); }
     window.resetScore = async function(matchId, p1, p2) { window.changeScore(matchId, 0, 0, p1, p2); }
 
-    window.autoDrawGroups = async function() {
-      const players = allUsers.filter(u => u.username !== 'Аноним'); const n = players.length; if (n < 4) return alert('Для старта нужно минимум 4 участника!');
-      if (!confirm(`Система перемешает игроков заново и закроет прием составов. Продолжить?`)) return;
-      let pSpots = n >= 32 ? 32 : (n >= 16 ? 16 : (n >= 8 ? 8 : 4)); let gCount = pSpots / 2; let shuf = [...players].sort(() => 0.5 - Math.random()); let grps = Array.from({length: gCount}, () => []);
-      shuf.forEach((u, i) => { grps[i % gCount].push(u); });
-      alert('Распределяем по группам...');
-      for (let i = 0; i < gCount; i++) { let gName = 'Группа ' + String.fromCharCode(65 + i); for (let u of grps[i]) { await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${u.id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ group_name: gName, can_update_squad: false }) }); } }
-      alert(`Жеребьевка завершена!`); await loadTournament(); window.switchTab('table');
+    window.autoDrawGroups = function() {
+      const players = allUsers.filter(u => u.username !== 'Аноним'); const n = players.length; 
+      if (n < 4) return Telegram.WebApp.showAlert('Для старта нужно минимум 4 участника!');
+      Telegram.WebApp.showConfirm(`Система перемешает игроков заново и закроет прием составов. Продолжить?`, async function(confirmed) {
+        if (!confirmed) return;
+        let pSpots = n >= 32 ? 32 : (n >= 16 ? 16 : (n >= 8 ? 8 : 4)); let gCount = pSpots / 2; let shuf = [...players].sort(() => 0.5 - Math.random()); let grps = Array.from({length: gCount}, () => []);
+        shuf.forEach((u, i) => { grps[i % gCount].push(u); });
+        for (let i = 0; i < gCount; i++) { let gName = 'Группа ' + String.fromCharCode(65 + i); for (let u of grps[i]) { await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${u.id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ group_name: gName, can_update_squad: false }) }); } }
+        Telegram.WebApp.showAlert(`Жеребьевка успешно завершена!`); await loadTournament(); window.switchTab('table');
+      });
     }
 
-    window.generateGroupMatches = async function() {
-      if (!confirm('Сгенерировать матчи для всех групп (каждый с каждым)?')) return;
-      const gUsers = {}; allUsers.forEach(u => { const g = u.group_name; if (g && g !== 'Без группы') { if(!gUsers[g]) gUsers[g] = []; gUsers[g].push(u); } });
-      const vGroups = Object.keys(gUsers); if (vGroups.length === 0) return alert('Группы не найдены!');
-      let matchPromises = [];
-      for (let g of vGroups) {
-        let players = gUsers[g];
-        for (let i = 0; i < players.length; i++) {
-          for (let j = i + 1; j < players.length; j++) {
-            let p1 = players[i].username; let p2 = players[j].username;
-            matchPromises.push(fetch(`${SUPABASE_URL}/rest/v1/matches`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ player1: p1, player2: p2, score1: 0, score2: 0, round: 'Группы', is_completed: false }) }));
-            sendNotification(p1, `🔥 Назначен матч группового этапа!\n${p1} vs ${p2}`); sendNotification(p2, `🔥 Назначен матч группового этапа!\n${p1} vs ${p2}`);
+    window.generateGroupMatches = function() {
+      Telegram.WebApp.showConfirm('Сгенерировать матчи для всех групп (каждый с каждым)?', async function(confirmed) {
+        if (!confirmed) return;
+        const gUsers = {}; allUsers.forEach(u => { const g = u.group_name; if (g && g !== 'Без группы') { if(!gUsers[g]) gUsers[g] = []; gUsers[g].push(u); } });
+        const vGroups = Object.keys(gUsers); if (vGroups.length === 0) return Telegram.WebApp.showAlert('Группы не найдены!');
+        let matchPromises = [];
+        for (let g of vGroups) {
+          let players = gUsers[g];
+          for (let i = 0; i < players.length; i++) {
+            for (let j = i + 1; j < players.length; j++) {
+              let p1 = players[i].username; let p2 = players[j].username;
+              matchPromises.push(fetch(`${SUPABASE_URL}/rest/v1/matches`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ player1: p1, player2: p2, score1: 0, score2: 0, round: 'Группы', is_completed: false }) }));
+              sendNotification(p1, `🔥 Назначен матч группового этапа!\n${p1} vs ${p2}`); sendNotification(p2, `🔥 Назначен матч группового этапа!\n${p1} vs ${p2}`);
+            }
           }
         }
-      }
-      alert('Генерируем матчи... Пожалуйста, подождите.'); await Promise.all(matchPromises); alert('Матчи группового этапа успешно созданы!'); setRound('Группы'); window.switchTab('matches'); await loadTournament();
+        await Promise.all(matchPromises); Telegram.WebApp.showAlert('Матчи группового этапа успешно созданы!'); setRound('Группы'); window.switchTab('matches'); await loadTournament();
+      });
     }
 
-    window.startPlayoffs = async function() {
+    window.startPlayoffs = function() {
       const gMatch = allMatches.filter(m => m.round === 'Группы');
-      if (gMatch.length > 0) { const unfin = gMatch.filter(m => !m.is_completed); if (unfin.length > 0) { if (!confirm(`Внимание! Осталось ${unfin.length} незавершенных матчей в группах. Сетка может быть неточной. Продолжить?`)) return; } }
-      if (!confirm('Создать плей-офф? 1-е место группы сыграет со 2-м местом соседней группы!')) return;
+      if (gMatch.length > 0) { const unfin = gMatch.filter(m => !m.is_completed); if (unfin.length > 0) { return Telegram.WebApp.showAlert(`Внимание! Осталось ${unfin.length} незавершенных матчей в группах. Сначала доиграйте их!`); } }
       
-      allUsers.sort((a, b) => { let pA = (a.wins||0)*3; let pB = (b.wins||0)*3; if (pA !== pB) return pB - pA; return ((b.goals_for||0)-(b.goals_against||0)) - ((a.goals_for||0)-(a.goals_against||0)); });
-      const gUsers = {}; allUsers.forEach(u => { const g = u.group_name; if (g && g !== 'Без группы') { if(!gUsers[g]) gUsers[g] = []; gUsers[g].push(u); } });
-      const vGroups = Object.keys(gUsers).sort(); const gC = vGroups.length; if (gC === 0) return alert('Группы не найдены!');
-      let rName = gC === 16 ? '1/16 финала' : (gC === 8 ? '1/8 финала' : (gC === 4 ? '1/4 финала' : 'Полуфинал'));
-      
-      let promises = [];
-      for (let i = 0; i < gC; i += 2) {
-        let g1 = vGroups[i]; let g2 = vGroups[i+1]; if (!g1 || !g2) continue;
-        let p1g1 = gUsers[g1][0]; let p2g1 = gUsers[g1][1]; let p1g2 = gUsers[g2][0]; let p2g2 = gUsers[g2][1]; 
+      Telegram.WebApp.showConfirm('Создать плей-офф? 1-е место группы сыграет со 2-м местом соседней группы!', async function(confirmed) {
+        if (!confirmed) return;
+        allUsers.sort((a, b) => { let pA = (a.wins||0)*3; let pB = (b.wins||0)*3; if (pA !== pB) return pB - pA; return ((b.goals_for||0)-(b.goals_against||0)) - ((a.goals_for||0)-(a.goals_against||0)); });
+        const gUsers = {}; allUsers.forEach(u => { const g = u.group_name; if (g && g !== 'Без группы') { if(!gUsers[g]) gUsers[g] = []; gUsers[g].push(u); } });
+        const vGroups = Object.keys(gUsers).sort(); const gC = vGroups.length; if (gC === 0) return Telegram.WebApp.showAlert('Группы не найдены!');
+        let rName = gC === 16 ? '1/16 финала' : (gC === 8 ? '1/8 финала' : (gC === 4 ? '1/4 финала' : 'Полуфинал'));
         
-        if (p1g1 && p2g2) {
-          promises.push(fetch(`${SUPABASE_URL}/rest/v1/matches`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ player1: p1g1.username, player2: p2g2.username, score1: 0, score2: 0, round: rName, is_completed: false }) }));
-          sendNotification(p1g1.username, `🔥 Ты в плей-офф! Соперник: ${p2g2.username}`); sendNotification(p2g2.username, `🔥 Ты в плей-офф! Соперник: ${p1g1.username}`);
+        let promises = [];
+        for (let i = 0; i < gC; i += 2) {
+          let g1 = vGroups[i]; let g2 = vGroups[i+1]; if (!g1 || !g2) continue;
+          let p1g1 = gUsers[g1][0]; let p2g1 = gUsers[g1][1]; let p1g2 = gUsers[g2][0]; let p2g2 = gUsers[g2][1]; 
+          
+          if (p1g1 && p2g2) { promises.push(fetch(`${SUPABASE_URL}/rest/v1/matches`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ player1: p1g1.username, player2: p2g2.username, score1: 0, score2: 0, round: rName, is_completed: false }) })); sendNotification(p1g1.username, `🔥 Ты в плей-офф! Соперник: ${p2g2.username}`); sendNotification(p2g2.username, `🔥 Ты в плей-офф! Соперник: ${p1g1.username}`); }
+          if (p1g2 && p2g1) { promises.push(fetch(`${SUPABASE_URL}/rest/v1/matches`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ player1: p1g2.username, player2: p2g1.username, score1: 0, score2: 0, round: rName, is_completed: false }) })); sendNotification(p1g2.username, `🔥 Ты в плей-офф! Соперник: ${p2g1.username}`); sendNotification(p2g1.username, `🔥 Ты в плей-офф! Соперник: ${p1g2.username}`); }
         }
-        if (p1g2 && p2g1) {
-          promises.push(fetch(`${SUPABASE_URL}/rest/v1/matches`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ player1: p1g2.username, player2: p2g1.username, score1: 0, score2: 0, round: rName, is_completed: false }) }));
-          sendNotification(p1g2.username, `🔥 Ты в плей-офф! Соперник: ${p2g1.username}`); sendNotification(p2g1.username, `🔥 Ты в плей-офф! Соперник: ${p1g2.username}`);
-        }
-      }
-      alert('Генерируем сетку плей-офф... Пожалуйста, подождите.'); await Promise.all(promises);
-      alert(`Сетка ${rName} сформирована!`); window.switchTab('bracket'); await loadTournament();
+        await Promise.all(promises); Telegram.WebApp.showAlert(`Сетка ${rName} сформирована!`); window.switchTab('bracket'); await loadTournament();
+      });
     }
 
-    window.finishTournament = async function() {
-      let tName = prompt("Название турнира (напр. 'Летний Кубок'):"); if (!tName) return;
-      if (!confirm("⚠️ Вы уверены? Текущая таблица обнулится, а данные уйдут в архив!")) return;
-      alert("Сохраняем историю...");
-      for (let u of allUsers) {
-        if ((u.wins>0 || u.losses>0 || u.goals_for>0 || u.goals_against>0) || u.current_squad_url) { await fetch(`${SUPABASE_URL}/rest/v1/player_history`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ user_id: u.id, tournament_name: tName, wins: u.wins, losses: u.losses, goals_for: u.goals_for, goals_against: u.goals_against, squad_url: u.current_squad_url }) }); }
-        await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${u.id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: 0, losses: 0, goals_for: 0, goals_against: 0, group_name: 'Без группы', can_update_squad: true, current_squad_url: null }) });
-      }
-      for (let m of allMatches) { await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${m.id}`, { method: 'DELETE', headers: baseHeaders }); }
-      alert("✅ Турнир завершен и отправлен в архив."); await loadTournament();
+    window.finishTournament = function() {
+      Telegram.WebApp.showConfirm("⚠️ Вы уверены? Текущая таблица обнулится, а данные уйдут в архив!", async function(confirmed) {
+        if (!confirmed) return;
+        let tName = prompt("Название турнира (напр. 'Летний Кубок'):"); if (!tName) return;
+        
+        for (let u of allUsers) {
+          if ((u.wins>0 || u.losses>0 || u.goals_for>0 || u.goals_against>0) || u.current_squad_url) { await fetch(`${SUPABASE_URL}/rest/v1/player_history`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ user_id: u.id, tournament_name: tName, wins: u.wins, losses: u.losses, goals_for: u.goals_for, goals_against: u.goals_against, squad_url: u.current_squad_url }) }); }
+          await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${u.id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: 0, losses: 0, goals_for: 0, goals_against: 0, group_name: 'Без группы', can_update_squad: true, current_squad_url: null }) });
+        }
+        for (let m of allMatches) { await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${m.id}`, { method: 'DELETE', headers: baseHeaders }); }
+        Telegram.WebApp.showAlert("✅ Турнир завершен и отправлен в архив."); await loadTournament();
+      });
     }
 
     async function loadTournament() {
@@ -392,7 +411,7 @@
         pHtml += `<h3 class="text-blue-400 font-bold mt-6 mb-3 px-2 border-b border-blue-900/50 pb-1">🏆 ${gName}</h3>`;
         pHtml += pInG.map((u, i) => {
           const isMe = u.id === telegramId; const m = i===0 ? '1️⃣' : i===1 ? '2️⃣' : i===2 ? '3️⃣' : '⚽'; const pI = u.platform === 'PlayStation' ? '🎮 PS' : (u.platform === 'Xbox' ? '❎ Xbox' : '💻 PC');
-          return `<div onclick="openPlayerProfile(${u.id})" class="cursor-pointer p-4 rounded-xl border shadow-sm mb-3 transition hover:bg-slate-700/80 ${isMe ? 'border-blue-500/50 bg-blue-900/20' : 'border-slate-700/50 bg-slate-800'} relative"><div class="flex items-center justify-between mb-3"><div class="flex items-center overflow-hidden"><div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 text-blue-400 text-sm flex-shrink-0">${m}</div><div class="flex flex-col text-left truncate"><span class="font-bold text-slate-200 text-sm leading-tight truncate">${u.username || 'Аноним'}</span><span class="text-[10px] text-slate-400 mt-0.5 truncate">${pI}</span></div></div>${(isAdminMode) ? `<div class="flex space-x-2 pl-2 relative z-10"><button onclick="event.stopPropagation(); fetch('${SUPABASE_URL}/rest/v1/users?id=eq.${u.id}', {method: 'PATCH', headers: baseHeaders, body: JSON.stringify({group_name: prompt('Группа:', 'Группа A')})}).then(loadTournament);" class="text-blue-400/70 hover:text-blue-400 px-2 py-1 bg-slate-900 rounded text-[10px] uppercase font-bold transition">⚙️</button><button onclick="event.stopPropagation(); if(confirm('Удалить?')) fetch('${SUPABASE_URL}/rest/v1/users?id=eq.${u.id}', {method: 'DELETE', headers: baseHeaders}).then(loadTournament);" class="text-red-400/50 hover:text-red-400 px-2 py-1 rounded text-xs transition">✕</button></div>` : '<div class="text-slate-500 text-xs opacity-50">👁️</div>'}</div><div class="grid grid-cols-3 gap-2 text-center text-xs bg-slate-900/50 p-2 rounded-lg text-slate-400 pointer-events-none"><div>Поб: <span class="text-white font-bold">${u.wins || 0} / ${u.losses || 0}</span></div><div>Голы: <span class="text-white font-bold">${u.goals_for || 0} : ${u.goals_against || 0}</span></div><div>Очки: <span class="text-blue-400 font-bold">${(u.wins || 0) * 3}</span></div></div></div>`;
+          return `<div onclick="openPlayerProfile(${u.id})" class="cursor-pointer p-4 rounded-xl border shadow-sm mb-3 transition hover:bg-slate-700/80 ${isMe ? 'border-blue-500/50 bg-blue-900/20' : 'border-slate-700/50 bg-slate-800'} relative"><div class="flex items-center justify-between mb-3"><div class="flex items-center overflow-hidden"><div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 text-blue-400 text-sm flex-shrink-0">${m}</div><div class="flex flex-col text-left truncate"><span class="font-bold text-slate-200 text-sm leading-tight truncate">${u.username || 'Аноним'}</span><span class="text-[10px] text-slate-400 mt-0.5 truncate">${pI}</span></div></div>${(isAdminMode) ? `<div class="flex space-x-2 pl-2 relative z-10"><button onclick="event.stopPropagation(); fetch('${SUPABASE_URL}/rest/v1/users?id=eq.${u.id}', {method: 'PATCH', headers: baseHeaders, body: JSON.stringify({group_name: prompt('Группа:', 'Группа A')})}).then(loadTournament);" class="text-blue-400/70 hover:text-blue-400 px-2 py-1 bg-slate-900 rounded text-[10px] uppercase font-bold transition">⚙️</button><button onclick="event.stopPropagation(); Telegram.WebApp.showConfirm('Удалить?', function(c) { if(c) fetch('${SUPABASE_URL}/rest/v1/users?id=eq.${u.id}', {method: 'DELETE', headers: baseHeaders}).then(loadTournament); });" class="text-red-400/50 hover:text-red-400 px-2 py-1 rounded text-xs transition">✕</button></div>` : '<div class="text-slate-500 text-xs opacity-50">👁️</div>'}</div><div class="grid grid-cols-3 gap-2 text-center text-xs bg-slate-900/50 p-2 rounded-lg text-slate-400 pointer-events-none"><div>Поб: <span class="text-white font-bold">${u.wins || 0} / ${u.losses || 0}</span></div><div>Голы: <span class="text-white font-bold">${u.goals_for || 0} : ${u.goals_against || 0}</span></div><div>Очки: <span class="text-blue-400 font-bold">${(u.wins || 0) * 3}</span></div></div></div>`;
         }).join('');
       }
       document.getElementById('db-players').innerHTML = pHtml;
