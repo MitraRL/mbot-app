@@ -59,7 +59,10 @@
           <button onclick="saveProfile()" class="w-full bg-blue-600 px-4 py-2 mt-2 rounded-xl text-sm font-semibold hover:bg-blue-500 transition shadow-lg shadow-blue-500/20">Сохранить изменения</button>
         </div>
 
-        <div id="admin-panel" class="hidden bg-slate-800/80 border border-blue-500/40 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+        <!-- КНОПКА ПЕРЕКЛЮЧЕНИЯ РЕЖИМА АДМИНА -->
+        <button id="admin-toggle-btn" onclick="toggleAdminMode()" class="hidden w-full bg-slate-700 hover:bg-slate-600 py-2 mt-4 rounded-xl text-xs font-bold text-white transition">👁️ Выйти из режима Админа</button>
+
+        <div id="admin-panel" class="hidden bg-slate-800/80 border border-blue-500/40 rounded-2xl p-5 shadow-lg relative overflow-hidden mt-4">
           <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-purple-600"></div>
           <h2 class="text-sm font-bold text-blue-400 mb-4 flex items-center">👑 Панель организатора</h2>
           <div class="bg-slate-900/50 p-3 rounded-xl border border-blue-500/20 mb-4 space-y-2">
@@ -112,7 +115,27 @@
     const baseHeaders = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' };
 
     let allMatches = []; let allUsers = []; let currentRound = 'Дерево'; let editModeMatchId = null; let proposeModeMatchId = null;
-    if (telegramId === ADMIN_ID) document.getElementById('admin-panel').classList.remove('hidden');
+    let isAdminMode = (telegramId === ADMIN_ID);
+
+    if (telegramId === ADMIN_ID) {
+      document.getElementById('admin-toggle-btn').classList.remove('hidden');
+      if (isAdminMode) document.getElementById('admin-panel').classList.remove('hidden');
+    }
+
+    window.toggleAdminMode = function() {
+      isAdminMode = !isAdminMode;
+      const btn = document.getElementById('admin-toggle-btn');
+      if (isAdminMode) {
+        btn.innerHTML = '👁️ Выйти из режима Админа';
+        btn.className = 'w-full bg-slate-700 hover:bg-slate-600 py-2 mt-4 rounded-xl text-xs font-bold text-white transition';
+        document.getElementById('admin-panel').classList.remove('hidden');
+      } else {
+        btn.innerHTML = '👑 Войти в режим Админа';
+        btn.className = 'w-full bg-blue-600 hover:bg-blue-500 py-2 mt-4 rounded-xl text-xs font-bold text-white transition shadow-lg shadow-blue-500/20';
+        document.getElementById('admin-panel').classList.add('hidden');
+      }
+      loadTournament(); // Перезагружаем турнир, чтобы перерисовать матчи и таблицу
+    }
 
     function generateProfileHtml(user, history) {
       let squadImg = user.current_squad_url ? `<img src="${user.current_squad_url}" class="w-full h-auto rounded-lg border border-slate-700/50 mt-2 shadow-lg">` : `<div class="text-xs text-slate-500 bg-slate-900/50 p-4 rounded-lg border border-slate-800 text-center mt-2">Состав не загружен</div>`;
@@ -170,7 +193,7 @@
     async function sendNotification(username, text) { let user = allUsers.find(u => u.username === username); if (user && user.id) { try { await fetch(`${SUPABASE_URL}/rest/v1/notifications`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ telegram_id: user.id, message: text }) }); } catch(e) {} } }
 
     function renderMatches() {
-      const container = document.getElementById('db-matches'); const filteredMatches = allMatches.filter(m => m.round === currentRound); const isAdmin = (telegramId === ADMIN_ID);
+      const container = document.getElementById('db-matches'); const filteredMatches = allMatches.filter(m => m.round === currentRound); const isAdmin = isAdminMode;
       if (filteredMatches.length === 0) { container.innerHTML = `<div class="text-center text-slate-500 text-sm bg-slate-800/50 p-4 rounded-xl border border-slate-700/30 flex flex-col items-center"><span class="text-2xl mb-2">🤷‍♂️</span><span>Матчей в этом раунде пока нет.</span></div>`; return; }
 
       container.innerHTML = filteredMatches.map(m => {
@@ -272,14 +295,10 @@
       alert(`Жеребьевка завершена!`); await loadTournament(); window.switchTab('table');
     }
 
-    // НОВАЯ ФУНКЦИЯ: АВТО-ГЕНЕРАЦИЯ МАТЧЕЙ В ГРУППАХ (Каждый с каждым)
     window.generateGroupMatches = async function() {
       if (!confirm('Сгенерировать матчи для всех групп (каждый с каждым)?')) return;
-      
-      const gUsers = {}; 
-      allUsers.forEach(u => { const g = u.group_name; if (g && g !== 'Без группы') { if(!gUsers[g]) gUsers[g] = []; gUsers[g].push(u); } });
+      const gUsers = {}; allUsers.forEach(u => { const g = u.group_name; if (g && g !== 'Без группы') { if(!gUsers[g]) gUsers[g] = []; gUsers[g].push(u); } });
       const vGroups = Object.keys(gUsers); if (vGroups.length === 0) return alert('Группы не найдены!');
-
       let matchPromises = [];
       for (let g of vGroups) {
         let players = gUsers[g];
@@ -291,10 +310,7 @@
           }
         }
       }
-      alert('Генерируем матчи... Пожалуйста, подождите.');
-      await Promise.all(matchPromises);
-      alert('Матчи группового этапа успешно созданы!');
-      setRound('Группы'); window.switchTab('matches'); await loadTournament();
+      alert('Генерируем матчи... Пожалуйста, подождите.'); await Promise.all(matchPromises); alert('Матчи группового этапа успешно созданы!'); setRound('Группы'); window.switchTab('matches'); await loadTournament();
     }
 
     window.startPlayoffs = async function() {
@@ -340,7 +356,7 @@
         pHtml += `<h3 class="text-blue-400 font-bold mt-6 mb-3 px-2 border-b border-blue-900/50 pb-1">🏆 ${gName}</h3>`;
         pHtml += pInG.map((u, i) => {
           const isMe = u.id === telegramId; const m = i===0 ? '1️⃣' : i===1 ? '2️⃣' : i===2 ? '3️⃣' : '⚽'; const pI = u.platform === 'PlayStation' ? '🎮 PS' : (u.platform === 'Xbox' ? '❎ Xbox' : '💻 PC');
-          return `<div onclick="openPlayerProfile(${u.id})" class="cursor-pointer p-4 rounded-xl border shadow-sm mb-3 transition hover:bg-slate-700/80 ${isMe ? 'border-blue-500/50 bg-blue-900/20' : 'border-slate-700/50 bg-slate-800'} relative"><div class="flex items-center justify-between mb-3"><div class="flex items-center overflow-hidden"><div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 text-blue-400 text-sm flex-shrink-0">${m}</div><div class="flex flex-col text-left truncate"><span class="font-bold text-slate-200 text-sm leading-tight truncate">${u.username || 'Аноним'}</span><span class="text-[10px] text-slate-400 mt-0.5 truncate">${pI}</span></div></div>${(telegramId === ADMIN_ID) ? `<div class="flex space-x-2 pl-2 relative z-10"><button onclick="event.stopPropagation(); fetch('${SUPABASE_URL}/rest/v1/users?id=eq.${u.id}', {method: 'PATCH', headers: baseHeaders, body: JSON.stringify({group_name: prompt('Группа:', 'Группа A')})}).then(loadTournament);" class="text-blue-400/70 hover:text-blue-400 px-2 py-1 bg-slate-900 rounded text-[10px] uppercase font-bold transition">⚙️</button><button onclick="event.stopPropagation(); if(confirm('Удалить?')) fetch('${SUPABASE_URL}/rest/v1/users?id=eq.${u.id}', {method: 'DELETE', headers: baseHeaders}).then(loadTournament);" class="text-red-400/50 hover:text-red-400 px-2 py-1 rounded text-xs transition">✕</button></div>` : '<div class="text-slate-500 text-xs opacity-50">👁️</div>'}</div><div class="grid grid-cols-3 gap-2 text-center text-xs bg-slate-900/50 p-2 rounded-lg text-slate-400 pointer-events-none"><div>Поб: <span class="text-white font-bold">${u.wins || 0} / ${u.losses || 0}</span></div><div>Голы: <span class="text-white font-bold">${u.goals_for || 0} : ${u.goals_against || 0}</span></div><div>Очки: <span class="text-blue-400 font-bold">${(u.wins || 0) * 3}</span></div></div></div>`;
+          return `<div onclick="openPlayerProfile(${u.id})" class="cursor-pointer p-4 rounded-xl border shadow-sm mb-3 transition hover:bg-slate-700/80 ${isMe ? 'border-blue-500/50 bg-blue-900/20' : 'border-slate-700/50 bg-slate-800'} relative"><div class="flex items-center justify-between mb-3"><div class="flex items-center overflow-hidden"><div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 text-blue-400 text-sm flex-shrink-0">${m}</div><div class="flex flex-col text-left truncate"><span class="font-bold text-slate-200 text-sm leading-tight truncate">${u.username || 'Аноним'}</span><span class="text-[10px] text-slate-400 mt-0.5 truncate">${pI}</span></div></div>${(isAdminMode) ? `<div class="flex space-x-2 pl-2 relative z-10"><button onclick="event.stopPropagation(); fetch('${SUPABASE_URL}/rest/v1/users?id=eq.${u.id}', {method: 'PATCH', headers: baseHeaders, body: JSON.stringify({group_name: prompt('Группа:', 'Группа A')})}).then(loadTournament);" class="text-blue-400/70 hover:text-blue-400 px-2 py-1 bg-slate-900 rounded text-[10px] uppercase font-bold transition">⚙️</button><button onclick="event.stopPropagation(); if(confirm('Удалить?')) fetch('${SUPABASE_URL}/rest/v1/users?id=eq.${u.id}', {method: 'DELETE', headers: baseHeaders}).then(loadTournament);" class="text-red-400/50 hover:text-red-400 px-2 py-1 rounded text-xs transition">✕</button></div>` : '<div class="text-slate-500 text-xs opacity-50">👁️</div>'}</div><div class="grid grid-cols-3 gap-2 text-center text-xs bg-slate-900/50 p-2 rounded-lg text-slate-400 pointer-events-none"><div>Поб: <span class="text-white font-bold">${u.wins || 0} / ${u.losses || 0}</span></div><div>Голы: <span class="text-white font-bold">${u.goals_for || 0} : ${u.goals_against || 0}</span></div><div>Очки: <span class="text-blue-400 font-bold">${(u.wins || 0) * 3}</span></div></div></div>`;
         }).join('');
       }
       document.getElementById('db-players').innerHTML = pHtml;
