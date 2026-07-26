@@ -77,27 +77,21 @@
       'Content-Type': 'application/json' 
     };
 
-    // Глобальные переменные
     let allMatches = [];
     let allUsers = [];
     let currentRound = '1/8 финала';
+    let editModeMatchId = null; // Переменная для отслеживания редактируемого матча
 
-    // Показываем админ-панель, если это создатель
     if (telegramId === ADMIN_ID) {
       document.getElementById('admin-panel').classList.remove('hidden');
     }
 
-    // --- ФУНКЦИЯ ПЕРЕКЛЮЧЕНИЯ РАУНДОВ ---
+    // --- ПЕРЕКЛЮЧЕНИЕ РАУНДОВ ---
     window.setRound = function(roundName) {
       currentRound = roundName;
       const buttons = document.querySelectorAll('#round-buttons button');
+      buttons.forEach(btn => btn.className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition');
       
-      // Сбрасываем стили всех кнопок
-      buttons.forEach(btn => {
-        btn.className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition';
-      });
-      
-      // Делаем активную кнопку синей
       let actId = '';
       if (roundName === '1/8 финала') actId = 'btn-1-8';
       else if (roundName === '1/4 финала') actId = 'btn-1-4';
@@ -105,40 +99,68 @@
       else if (roundName === 'Финал') actId = 'btn-final';
       
       document.getElementById(actId).className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-blue-500 text-white transition';
-      
+      editModeMatchId = null; // Сбрасываем режим редактирования при смене вкладки
       renderMatches();
     }
 
-    // --- ФУНКЦИЯ ОТПРАВКИ УВЕДОМЛЕНИЙ В ОЧЕРЕДЬ ---
+    // --- ОТПРАВКА УВЕДОМЛЕНИЙ ---
     async function sendNotification(username, text) {
       let user = allUsers.find(u => u.username === username);
-      
       if (user && user.id) {
         try {
           await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
-            method: 'POST',
-            headers: baseHeaders,
-            body: JSON.stringify({ 
-              telegram_id: user.id, 
-              message: text 
-            })
+            method: 'POST', headers: baseHeaders, body: JSON.stringify({ telegram_id: user.id, message: text })
           });
-        } catch(e) { 
-          console.error('Ошибка добавления уведомления в очередь', e); 
-        }
+        } catch(e) { console.error(e); }
       }
     }
 
-    // --- ФУНКЦИЯ ОТРИСОВКИ МАТЧЕЙ ---
+    // --- ОТРИСОВКА МАТЧЕЙ ---
     function renderMatches() {
       const container = document.getElementById('db-matches');
       const filteredMatches = allMatches.filter(m => m.round === currentRound);
       const isAdmin = (telegramId === ADMIN_ID);
 
       if (filteredMatches.length > 0) {
-        container.innerHTML = filteredMatches.map(m => `
+        container.innerHTML = filteredMatches.map(m => {
+          
+          // РЕЖИМ РЕДАКТИРОВАНИЯ
+          if (editModeMatchId === m.id) {
+            return `
+            <div class="bg-slate-800 rounded-2xl p-5 border border-yellow-500/50 shadow-sm">
+              <div class="text-center text-xs text-yellow-400 mb-2 font-bold">Редактирование матча</div>
+              <div class="space-y-3">
+                <div class="grid grid-cols-2 gap-2">
+                  <input id="edit-p1-${m.id}" type="text" value="${m.player1}" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                  <input id="edit-p2-${m.id}" type="text" value="${m.player2}" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+                <select id="edit-round-${m.id}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                  <option value="1/8 финала" ${m.round === '1/8 финала' ? 'selected' : ''}>1/8 финала</option>
+                  <option value="1/4 финала" ${m.round === '1/4 финала' ? 'selected' : ''}>1/4 финала</option>
+                  <option value="Полуфинал" ${m.round === 'Полуфинал' ? 'selected' : ''}>Полуфинал</option>
+                  <option value="Финал" ${m.round === 'Финал' ? 'selected' : ''}>Финал</option>
+                </select>
+                <div class="flex space-x-2">
+                  <button onclick="saveMatchEdit(${m.id})" class="flex-1 bg-green-600 hover:bg-green-500 py-2 rounded-xl text-xs font-semibold text-white">💾 Сохранить</button>
+                  <button onclick="cancelEdit()" class="flex-1 bg-slate-600 hover:bg-slate-500 py-2 rounded-xl text-xs font-semibold text-white">Отмена</button>
+                </div>
+              </div>
+            </div>`;
+          }
+
+          // ОБЫЧНЫЙ РЕЖИМ ОТРИСОВКИ
+          return `
           <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700/50 shadow-sm ${m.is_completed ? 'opacity-80' : ''}">
-            <div class="text-center text-xs text-slate-400 mb-2">${m.round}</div>
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-xs text-slate-400">${m.round}</span>
+              ${isAdmin ? `
+                <div class="space-x-2">
+                  ${!m.is_completed ? `<button onclick="editMatchMode(${m.id})" class="text-slate-400 hover:text-white text-xs">✏️ Изменить</button>` : ''}
+                  <button onclick="deleteMatch(${m.id})" class="text-red-400/70 hover:text-red-400 text-xs">✕ Удалить</button>
+                </div>
+              ` : ''}
+            </div>
+            
             <div class="flex justify-between items-center font-bold text-slate-200">
               <span class="w-2/5 text-right truncate pr-2">${m.player1}</span> 
               <span class="w-1/5 text-center text-blue-400 text-lg">${m.score1} : ${m.score2}</span> 
@@ -146,8 +168,9 @@
             </div>
             
             ${isAdmin ? (m.is_completed ? `
-              <div class="mt-4 pt-3 border-t border-slate-700/50 text-center text-xs text-green-400 font-semibold">
-                ✅ Матч завершен
+              <div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-2">
+                <div class="text-center text-xs text-green-400 font-semibold">✅ Матч завершен</div>
+                <button onclick="rollbackMatch(${m.id}, '${m.player1}', '${m.player2}', ${m.score1}, ${m.score2})" class="bg-yellow-600/30 hover:bg-yellow-600/50 text-yellow-300 py-1.5 rounded-lg text-xs font-semibold">⏪ Отменить завершение (вернуть стату)</button>
               </div>
             ` : `
               <div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-2">
@@ -158,193 +181,190 @@
                 </div>
                 <button onclick="finishMatch(${m.id}, '${m.player1}', '${m.player2}', ${m.score1}, ${m.score2})" class="bg-green-600 hover:bg-green-500 py-2 rounded-lg text-xs font-semibold text-white">🏁 Завершить матч</button>
               </div>
-            `) : (m.is_completed ? `
-              <div class="mt-4 pt-3 border-t border-slate-700/50 text-center text-xs text-green-400 font-semibold">
-                ✅ Матч завершен
-              </div>
-            ` : '')}
+            `) : (m.is_completed ? `<div class="mt-4 pt-3 border-t border-slate-700/50 text-center text-xs text-green-400 font-semibold">✅ Матч завершен</div>` : '')}
           </div>
-        `).join('');
+        `}).join('');
       } else {
         container.innerHTML = `<div class="text-center text-slate-500 text-sm bg-slate-800/50 p-4 rounded-xl border border-slate-700/30">Матчей пока нет.</div>`;
       }
     }
 
-    // --- ФУНКЦИЯ СОЗДАНИЯ МАТЧА ---
-    window.createMatch = async function() {
-      const p1 = document.getElementById('new-p1').value.trim();
-      const p2 = document.getElementById('new-p2').value.trim();
-      const round = document.getElementById('new-round').value;
-      
-      if (!p1 || !p2) return;
-      
-      // Запись в БД
-      await fetch(`${SUPABASE_URL}/rest/v1/matches`, {
-        method: 'POST', 
-        headers: baseHeaders,
-        body: JSON.stringify({ 
-          player1: p1, 
-          player2: p2, 
-          score1: 0, 
-          score2: 0, 
-          round: round, 
-          is_completed: false 
-        })
-      });
-      
-      // Отправка уведомлений обоим игрокам
-      let msg = `🔥 Для тебя назначен новый матч!\nСтадия: ${round}\nСоперник: ${p1} vs ${p2}`;
-      await sendNotification(p1, msg);
-      await sendNotification(p2, msg);
-      
-      // Очистка полей и обновление экрана
-      document.getElementById('new-p1').value = ''; 
-      document.getElementById('new-p2').value = '';
-      await loadTournament();
+    // --- НОВЫЕ ФУНКЦИИ УПРАВЛЕНИЯ МАТЧАМИ ---
+
+    // Включить режим редактирования
+    window.editMatchMode = function(matchId) {
+      editModeMatchId = matchId;
+      renderMatches();
     }
 
-    // --- ФУНКЦИЯ ИЗМЕНЕНИЯ СЧЕТА ---
-    window.changeScore = async function(matchId, s1, s2, p1Name, p2Name) {
-      await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, {
-        method: 'PATCH', 
-        headers: baseHeaders, 
-        body: JSON.stringify({ score1: s1, score2: s2 })
-      });
-      
-      let msg = `⚽ Изменение счета в твоем матче!\nТекущий счет: ${p1Name} [${s1} : ${s2}] ${p2Name}`;
-      await sendNotification(p1Name, msg);
-      await sendNotification(p2Name, msg);
-      
-      await loadTournament();
+    // Отмена редактирования
+    window.cancelEdit = function() {
+      editModeMatchId = null;
+      renderMatches();
     }
 
-    // Сброс счета
-    window.resetScore = async function(matchId, p1, p2) { 
-      window.changeScore(matchId, 0, 0, p1, p2); 
+    // Сохранение изменений матча
+    window.saveMatchEdit = async function(matchId) {
+      const p1 = document.getElementById(`edit-p1-${matchId}`).value.trim();
+      const p2 = document.getElementById(`edit-p2-${matchId}`).value.trim();
+      const round = document.getElementById(`edit-round-${matchId}`).value;
+      
+      if (!p1 || !p2) { alert('Имена не могут быть пустыми'); return; }
+      
+      try {
+        await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, {
+          method: 'PATCH', headers: baseHeaders,
+          body: JSON.stringify({ player1: p1, player2: p2, round: round })
+        });
+        editModeMatchId = null;
+        await loadTournament();
+      } catch (err) { alert('Ошибка сохранения: ' + err.message); }
     }
 
-    // --- ФУНКЦИЯ ЗАВЕРШЕНИЯ МАТЧА ---
-    window.finishMatch = async function(matchId, p1Name, p2Name, s1, s2) {
-      if (!confirm('Завершить матч?')) return;
+    // Удаление матча
+    window.deleteMatch = async function(matchId) {
+      if (!confirm('Точно удалить этот матч навсегда?')) return;
+      try {
+        await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'DELETE', headers: baseHeaders });
+        await loadTournament();
+      } catch (err) { alert('Ошибка удаления: ' + err.message); }
+    }
+
+    // Откат завершения (вычитание статистики)
+    window.rollbackMatch = async function(matchId, p1Name, p2Name, s1, s2) {
+      if (!confirm('Отменить завершение матча? Очки и голы будут вычтены из статистики игроков.')) return;
       
       let p1 = allUsers.find(u => u.username === p1Name);
       let p2 = allUsers.find(u => u.username === p2Name);
 
-      // Обновляем статистику первого игрока
       if (p1) {
-        let wins = p1.wins || 0; 
-        let losses = p1.losses || 0;
-        
-        if (s1 > s2) wins++; 
-        if (s1 < s2) losses++;
-        
+        let wins = p1.wins || 0; let losses = p1.losses || 0;
+        if (s1 > s2 && wins > 0) wins--; 
+        if (s1 < s2 && losses > 0) losses--;
         await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p1.id}`, {
-          method: 'PATCH', 
-          headers: baseHeaders,
+          method: 'PATCH', headers: baseHeaders,
           body: JSON.stringify({ 
-            wins: wins, 
-            losses: losses, 
-            goals_for: (p1.goals_for || 0) + s1, 
-            goals_against: (p1.goals_against || 0) + s2 
+            wins: wins, losses: losses, 
+            goals_for: Math.max(0, (p1.goals_for || 0) - s1), 
+            goals_against: Math.max(0, (p1.goals_against || 0) - s2) 
           })
         });
       }
       
-      // Обновляем статистику второго игрока
       if (p2) {
-        let wins = p2.wins || 0; 
-        let losses = p2.losses || 0;
-        
-        if (s2 > s1) wins++; 
-        if (s2 < s1) losses++;
-        
+        let wins = p2.wins || 0; let losses = p2.losses || 0;
+        if (s2 > s1 && wins > 0) wins--; 
+        if (s2 < s1 && losses > 0) losses--;
         await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p2.id}`, {
-          method: 'PATCH', 
-          headers: baseHeaders,
+          method: 'PATCH', headers: baseHeaders,
           body: JSON.stringify({ 
-            wins: wins, 
-            losses: losses, 
-            goals_for: (p2.goals_for || 0) + s2, 
-            goals_against: (p2.goals_against || 0) + s1 
+            wins: wins, losses: losses, 
+            goals_for: Math.max(0, (p2.goals_for || 0) - s2), 
+            goals_against: Math.max(0, (p2.goals_against || 0) - s1) 
           })
         });
       }
 
-      // Помечаем матч завершенным
       await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, {
-          method: 'PATCH', 
-          headers: baseHeaders, 
-          body: JSON.stringify({ is_completed: true })
+          method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ is_completed: false })
       });
-      
-      // Уведомляем игроков
-      let msg = `🏁 Матч завершен!\nИтоговый счет: ${p1Name} [${s1} : ${s2}] ${p2Name}\nЗагляни в турнирную таблицу!`;
-      await sendNotification(p1Name, msg);
-      await sendNotification(p2Name, msg);
-
       await loadTournament();
     }
 
-    // --- ФУНКЦИЯ УДАЛЕНИЯ ИГРОКА ---
+
+    // --- СТАРЫЕ ФУНКЦИИ (СОЗДАНИЕ, СЧЕТ, ЗАВЕРШЕНИЕ) ---
+
+    window.createMatch = async function() {
+      const p1 = document.getElementById('new-p1').value.trim();
+      const p2 = document.getElementById('new-p2').value.trim();
+      const round = document.getElementById('new-round').value;
+      if (!p1 || !p2) return;
+      await fetch(`${SUPABASE_URL}/rest/v1/matches`, {
+        method: 'POST', headers: baseHeaders,
+        body: JSON.stringify({ player1: p1, player2: p2, score1: 0, score2: 0, round: round, is_completed: false })
+      });
+      let msg = `🔥 Для тебя назначен новый матч!\nСтадия: ${round}\nСоперник: ${p1} vs ${p2}`;
+      await sendNotification(p1, msg); await sendNotification(p2, msg);
+      document.getElementById('new-p1').value = ''; document.getElementById('new-p2').value = '';
+      await loadTournament();
+    }
+
+    window.changeScore = async function(matchId, s1, s2, p1Name, p2Name) {
+      await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, {
+        method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ score1: s1, score2: s2 })
+      });
+      let msg = `⚽ Изменение счета в твоем матче!\nТекущий счет: ${p1Name} [${s1} : ${s2}] ${p2Name}`;
+      await sendNotification(p1Name, msg); await sendNotification(p2Name, msg);
+      await loadTournament();
+    }
+
+    window.resetScore = async function(matchId, p1, p2) { window.changeScore(matchId, 0, 0, p1, p2); }
+
+    window.finishMatch = async function(matchId, p1Name, p2Name, s1, s2) {
+      if (!confirm('Завершить матч?')) return;
+      let p1 = allUsers.find(u => u.username === p1Name);
+      let p2 = allUsers.find(u => u.username === p2Name);
+
+      if (p1) {
+        let wins = p1.wins || 0; let losses = p1.losses || 0;
+        if (s1 > s2) wins++; if (s1 < s2) losses++;
+        await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p1.id}`, {
+          method: 'PATCH', headers: baseHeaders,
+          body: JSON.stringify({ wins: wins, losses: losses, goals_for: (p1.goals_for || 0) + s1, goals_against: (p1.goals_against || 0) + s2 })
+        });
+      }
+      if (p2) {
+        let wins = p2.wins || 0; let losses = p2.losses || 0;
+        if (s2 > s1) wins++; if (s2 < s1) losses++;
+        await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p2.id}`, {
+          method: 'PATCH', headers: baseHeaders,
+          body: JSON.stringify({ wins: wins, losses: losses, goals_for: (p2.goals_for || 0) + s2, goals_against: (p2.goals_against || 0) + s1 })
+        });
+      }
+      await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, {
+          method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ is_completed: true })
+      });
+      let msg = `🏁 Матч завершен!\nИтоговый счет: ${p1Name} [${s1} : ${s2}] ${p2Name}\nЗагляни в турнирную таблицу!`;
+      await sendNotification(p1Name, msg); await sendNotification(p2Name, msg);
+      await loadTournament();
+    }
+
     window.deletePlayer = async function(userId) {
       if (!confirm('Удалить?')) return;
-      
-      await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${userId}`, { 
-        method: 'DELETE', 
-        headers: baseHeaders 
-      });
-      
+      await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${userId}`, { method: 'DELETE', headers: baseHeaders });
       await loadTournament();
     }
 
-    // --- ГЛАВНАЯ ФУНКЦИЯ ЗАГРУЗКИ ДАННЫХ ---
     async function loadTournament() {
       let res = await fetch(`${SUPABASE_URL}/rest/v1/users?select=*`, { headers: baseHeaders });
       allUsers = await res.json();
-      
       let me = allUsers.find(u => u.id === telegramId);
-      
-      // Регистрируем нового игрока, если его нет
       if (!me) {
         await fetch(`${SUPABASE_URL}/rest/v1/users`, {
-          method: 'POST', 
-          headers: { ...baseHeaders, 'Prefer': 'resolution=merge-duplicates' },
-          body: JSON.stringify({ 
-            id: telegramId, 
-            username: tgUsername, 
-            wins: 0, 
-            losses: 0, 
-            goals_for: 0, 
-            goals_against: 0 
-          })
+          method: 'POST', headers: { ...baseHeaders, 'Prefer': 'resolution=merge-duplicates' },
+          body: JSON.stringify({ id: telegramId, username: tgUsername, wins: 0, losses: 0, goals_for: 0, goals_against: 0 })
         });
         res = await fetch(`${SUPABASE_URL}/rest/v1/users?select=*`, { headers: baseHeaders });
         allUsers = await res.json();
       }
       
-      // Сортировка по очкам и разнице мячей
       allUsers.sort((a, b) => {
-        let ptsA = (a.wins || 0) * 3; 
-        let ptsB = (b.wins || 0) * 3;
-        
+        let ptsA = (a.wins || 0) * 3; let ptsB = (b.wins || 0) * 3;
         if (ptsA !== ptsB) return ptsB - ptsA;
         return ((b.goals_for || 0) - (b.goals_against || 0)) - ((a.goals_for || 0) - (a.goals_against || 0));
       });
 
-      // Отрисовка списка игроков
       document.getElementById('db-players').innerHTML = allUsers.map((user, i) => {
         const isMe = user.id === telegramId;
         const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '⚽';
-        const bgStyle = isMe ? 'border-blue-500/50 bg-blue-900/20' : 'border-slate-700/50 bg-slate-800';
-        
         return `
-          <div class="p-4 rounded-xl border shadow-sm ${bgStyle}">
+          <div class="p-4 rounded-xl border shadow-sm ${isMe ? 'border-blue-500/50 bg-blue-900/20' : 'border-slate-700/50 bg-slate-800'}">
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center">
                 <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 text-blue-400">${medal}</div>
                 <span class="font-semibold text-slate-200">${user.username || 'Аноним'}</span>
               </div>
-              ${(telegramId === ADMIN_ID) ? `<button onclick="deletePlayer(${user.id})" class="text-red-400/50 hover:text-red-400 hover:bg-red-900/30 px-2 py-1 rounded text-xs transition">✕ Удалить</button>` : ''}
+              ${(telegramId === ADMIN_ID) ? `<button onclick="deletePlayer(${user.id})" class="text-red-400/50 hover:text-red-400 px-2 py-1 rounded text-xs transition">✕ Удалить</button>` : ''}
             </div>
             <div class="grid grid-cols-3 gap-2 text-center text-xs bg-slate-900/50 p-2 rounded-lg text-slate-400">
               <div>Поб/Пор: <span class="text-white font-bold">${user.wins || 0} / ${user.losses || 0}</span></div>
@@ -354,27 +374,23 @@
           </div>`;
       }).join('');
 
-      // Загрузка матчей
       let matchesRes = await fetch(`${SUPABASE_URL}/rest/v1/matches?select=*`, { headers: baseHeaders });
       allMatches = await matchesRes.json();
+      
+      // Сортируем матчи, чтобы завершенные были внизу
+      allMatches.sort((a, b) => (a.is_completed === b.is_completed) ? 0 : a.is_completed ? 1 : -1);
+      
       renderMatches();
     }
 
-    // --- ФУНКЦИЯ СМЕНЫ ИМЕНИ ---
     window.saveNickname = async function() {
       const newName = document.getElementById('nickname-input').value.trim();
       if (!newName) return;
-      
       await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${telegramId}`, {
-        method: 'PATCH', 
-        headers: baseHeaders, 
-        body: JSON.stringify({ username: newName })
+        method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ username: newName })
       });
-      
       await loadTournament();
     }
-    
-    // Запускаем загрузку при открытии
     loadTournament();
   </script>
 </body>
