@@ -185,11 +185,20 @@
       if (tabName === 'profile') titleEl.innerText = 'Профиль игрока';
     }
 
+    // ИСПРАВЛЕНИЕ: Осторожное переключение классов, сохраняющее класс hidden
     window.setRound = function(roundName) {
       currentRound = roundName;
-      document.querySelectorAll('#round-buttons button').forEach(btn => { btn.className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap'; });
+      document.querySelectorAll('#round-buttons button').forEach(btn => { 
+        // Если кнопка скрыта (hidden), мы оставляем этот класс!
+        let isHidden = btn.classList.contains('hidden');
+        btn.className = `px-5 py-2.5 rounded-full text-sm transition whitespace-nowrap ${isHidden ? 'hidden ' : ''} font-semibold bg-slate-800 text-slate-400`; 
+      });
       let actId = (roundName === 'Группы') ? 'btn-groups' : (roundName === '1/16 финала') ? 'btn-1-16' : (roundName === '1/8 финала') ? 'btn-1-8' : (roundName === '1/4 финала') ? 'btn-1-4' : (roundName === 'Полуфинал') ? 'btn-semi' : (roundName === 'Финал') ? 'btn-final' : '';
-      if (actId) document.getElementById(actId).className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-blue-500 text-white transition whitespace-nowrap shadow-lg shadow-blue-500/30'; 
+      if (actId) {
+        let btn = document.getElementById(actId);
+        let isHidden = btn.classList.contains('hidden');
+        btn.className = `px-5 py-2.5 rounded-full text-sm transition whitespace-nowrap ${isHidden ? 'hidden ' : ''} font-semibold bg-blue-500 text-white shadow-lg shadow-blue-500/30`;
+      }
       editModeMatchId = null; proposeModeMatchId = null; renderMatches();
     }
 
@@ -291,21 +300,17 @@
       });
     }
 
-    // НОВАЯ ФУНКЦИЯ ДЛЯ АВТО-ПРОДВИЖЕНИЯ СЕТКИ
     async function checkAndAdvancePlayoffs(finishedRoundName) {
       const playoffOrder = ['1/16 финала', '1/8 финала', '1/4 финала', 'Полуфинал', 'Финал'];
       let roundIndex = playoffOrder.indexOf(finishedRoundName);
-      if (roundIndex === -1 || roundIndex === playoffOrder.length - 1) return; // Это не плей-офф или это уже Финал
+      if (roundIndex === -1 || roundIndex === playoffOrder.length - 1) return;
 
       let nextRound = playoffOrder[roundIndex + 1];
       let matchesInRound = allMatches.filter(m => m.round === finishedRoundName);
-      
-      // Сортируем матчи по ID, чтобы сохранить структуру дерева (кто из какой ветки вышел)
       matchesInRound.sort((a, b) => a.id - b.id);
 
-      if (matchesInRound.length === 0 || !matchesInRound.every(m => m.is_completed)) return; // Еще не все доиграли
-
-      if (allMatches.some(m => m.round === nextRound)) return; // Следующий раунд уже сгенерирован
+      if (matchesInRound.length === 0 || !matchesInRound.every(m => m.is_completed)) return;
+      if (allMatches.some(m => m.round === nextRound)) return;
 
       let promises = [];
       for (let i = 0; i < matchesInRound.length; i += 2) {
@@ -335,15 +340,13 @@
       await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ is_completed: true, score1: s1, score2: s2, proposed_score1: null, proposed_score2: null, proposed_by: null }) });
       await sendNotification(p1Name, `🏁 Матч завершен! ${p1Name} [${s1} : ${s2}] ${p2Name}`); await sendNotification(p2Name, `🏁 Матч завершен! ${p1Name} [${s1} : ${s2}] ${p2Name}`);
       
-      // Сразу перезапрашиваем матчи, чтобы проверить статус текущего раунда
       let mRes = await fetch(`${SUPABASE_URL}/rest/v1/matches?select=*`, { headers: baseHeaders }); 
       allMatches = await mRes.json();
       
       let finishedMatch = allMatches.find(m => m.id === matchId);
       if (finishedMatch && finishedMatch.round !== 'Группы' && finishedMatch.round !== 'Финал') {
-         await checkAndAdvancePlayoffs(finishedMatch.round); // Магия авто-плей-оффа
+         await checkAndAdvancePlayoffs(finishedMatch.round);
       }
-      
       await loadTournament();
     }
     
@@ -479,6 +482,7 @@
       let s16 = allMatches.some(m => m.round === '1/16 финала') || vGroupsCount >= 16;
       let s8 = allMatches.some(m => m.round === '1/8 финала') || vGroupsCount >= 8 || s16;
       let s4 = allMatches.some(m => m.round === '1/4 финала') || vGroupsCount >= 4 || s8;
+      
       document.getElementById('btn-1-16').classList.toggle('hidden', !s16);
       document.getElementById('btn-1-8').classList.toggle('hidden', !s8);
       document.getElementById('btn-1-4').classList.toggle('hidden', !s4);
