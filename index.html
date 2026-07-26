@@ -9,6 +9,7 @@
 </head>
 <body class="bg-slate-900 text-white font-sans antialiased min-h-screen">
   
+  <!-- ЭКРАН БЛОКИРОВКИ: РЕГИСТРАЦИЯ -->
   <div id="registration-screen" class="hidden min-h-screen flex-col items-center justify-center p-4 bg-slate-900/95 backdrop-blur-sm z-50 fixed inset-0">
     <div class="bg-slate-800 p-6 rounded-2xl border border-blue-500/30 shadow-2xl w-full max-w-sm text-center relative overflow-hidden">
       <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-indigo-500"></div>
@@ -18,7 +19,17 @@
       <div class="bg-slate-900/50 p-4 rounded-xl mb-6 text-sm text-slate-300 text-left space-y-2">
         <div>1. Вернись в чат с ботом.</div><div>2. Нажми /start и выбери платформу.</div><div>3. Скинь боту скриншот своего состава.</div>
       </div>
-      <button onclick="Telegram.WebApp.close()" class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl text-sm font-bold text-white transition shadow-lg shadow-blue-500/30">Вернуться в чат с ботом</button>
+      <button onclick="Telegram.WebApp.close()" class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl text-sm font-bold text-white transition shadow-lg shadow-blue-500/30">Вернуться в чат</button>
+    </div>
+  </div>
+
+  <!-- ЭКРАН БЛОКИРОВКИ: БАН -->
+  <div id="ban-screen" class="hidden min-h-screen flex-col items-center justify-center p-4 bg-slate-900/95 backdrop-blur-sm z-50 fixed inset-0">
+    <div class="bg-red-900/80 p-6 rounded-2xl border border-red-500/50 shadow-2xl w-full max-w-sm text-center relative overflow-hidden">
+      <div class="text-5xl mb-4 mt-2">🚫</div>
+      <h2 class="text-xl font-bold text-white mb-2">Доступ закрыт</h2>
+      <p class="text-sm text-slate-300 mb-6">Организатор заблокировал вам доступ к турнирам.</p>
+      <button onclick="Telegram.WebApp.close()" class="w-full bg-slate-800 hover:bg-slate-700 py-3 rounded-xl text-sm font-bold text-white transition border border-slate-600">Закрыть</button>
     </div>
   </div>
 
@@ -54,7 +65,6 @@
             <div id="db-players" class="space-y-6 text-slate-300"><div class="text-center py-4 animate-pulse">Загрузка таблиц...</div></div>
         </div>
 
-        <!-- КОНТЕЙНЕР БОМБАРДИРОВ -->
         <div id="bracket-scorers-container" class="hidden space-y-3">
             <div id="db-scorers" class="text-slate-300"><div class="text-center py-4 animate-pulse">Загрузка статистики...</div></div>
         </div>
@@ -84,7 +94,6 @@
             <button onclick="autoDrawGroups()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">🎲</span> Сформировать группы</button>
             <button onclick="generateGroupMatches()" class="w-full bg-blue-600 hover:bg-blue-500 py-2 mt-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">⚔️</span> Создать матчи групп</button>
             <button onclick="startPlayoffs()" class="w-full bg-purple-600 hover:bg-purple-500 py-2 mt-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">🚀</span> Запустить Плей-офф</button>
-            
             <div class="pt-3 mt-3 border-t border-slate-700/50 space-y-2">
               <button onclick="archiveTournament()" class="w-full bg-green-600/80 hover:bg-green-500 py-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">📦</span> Завершить в Архив</button>
               <button onclick="wipeTournament()" class="w-full bg-red-700/80 hover:bg-red-600 py-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">🗑️</span> Удалить без сохранения</button>
@@ -105,7 +114,7 @@
       </div>
     </div>
 
-    <!-- МОДАЛКА ПРОФИЛЯ -->
+    <!-- МОДАЛКА ПРОФИЛЯ С КНОПКОЙ БАНА -->
     <div id="public-profile-modal" class="hidden fixed inset-0 z-[60] bg-slate-900/90 backdrop-blur-sm flex justify-center items-end sm:items-center">
       <div class="bg-slate-800 w-full max-w-md h-[85vh] sm:h-auto sm:max-h-[90vh] rounded-t-3xl sm:rounded-3xl border-t sm:border border-slate-700 shadow-2xl flex flex-col relative">
         <button onclick="closePlayerProfile()" class="absolute top-4 right-4 bg-slate-700 hover:bg-slate-600 text-white rounded-full w-8 h-8 flex items-center justify-center transition z-10">✕</button>
@@ -113,28 +122,21 @@
       </div>
     </div>
 
-    <!-- МОДАЛКА ДОБАВЛЕНИЯ БОМБАРДИРОВ -->
     <div id="scorers-modal" class="hidden fixed inset-0 z-[60] bg-slate-900/90 backdrop-blur-sm flex justify-center items-end sm:items-center">
         <div class="bg-slate-800 w-full max-w-md rounded-t-3xl sm:rounded-3xl border-t sm:border border-slate-700 shadow-2xl flex flex-col relative p-6">
           <button onclick="closeScorersModal()" class="absolute top-4 right-4 bg-slate-700 hover:bg-slate-600 text-white rounded-full w-8 h-8 flex items-center justify-center transition z-10">✕</button>
           <h2 class="text-lg font-bold text-white mb-2">⚽ Авторы голов</h2>
           <p class="text-xs text-slate-400 mb-4">Укажи, кто именно забил голы в этом матче за твою команду.</p>
-          
           <div class="flex space-x-2 mb-4">
-              <input id="scorer-name" type="text" placeholder="Имя карточки (напр. Роналду)" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+              <input id="scorer-name" type="text" placeholder="Имя (напр. Роналду)" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
               <input id="scorer-goals" type="number" min="1" placeholder="Голы" class="w-20 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-center text-white">
               <button onclick="addScorerToList()" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-xl text-sm font-bold text-white transition">+</button>
           </div>
-  
-          <div id="current-scorers-list" class="space-y-2 mb-6 max-h-40 overflow-y-auto scrollbar-hide">
-              <!-- Список добавленных -->
-          </div>
-  
-          <button onclick="saveScorersToDb()" class="w-full bg-green-600 hover:bg-green-500 py-3 rounded-xl text-sm font-bold text-white transition shadow-lg shadow-green-500/20">💾 Сохранить бомбардиров</button>
+          <div id="current-scorers-list" class="space-y-2 mb-6 max-h-40 overflow-y-auto scrollbar-hide"></div>
+          <button onclick="saveScorersToDb()" class="w-full bg-green-600 hover:bg-green-500 py-3 rounded-xl text-sm font-bold text-white transition shadow-lg shadow-green-500/20">💾 Сохранить</button>
         </div>
     </div>
 
-    <!-- НИЖНЕЕ МЕНЮ -->
     <div class="fixed bottom-0 left-0 w-full bg-slate-900/95 backdrop-blur-md border-t border-slate-800 z-50">
       <div class="max-w-md mx-auto flex justify-around p-2 pb-safe">
         <button onclick="switchTab('matches')" id="nav-matches" class="nav-btn flex flex-col items-center p-2 text-blue-500 transition w-1/3">
@@ -150,16 +152,10 @@
     </div>
   </div>
 
-  <style>
-      .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0.5rem); } 
-      .scrollbar-hide::-webkit-scrollbar { display: none; } 
-      .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-  </style>
+  <style>.pb-safe { padding-bottom: env(safe-area-inset-bottom, 0.5rem); } .scrollbar-hide::-webkit-scrollbar { display: none; } .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }</style>
 
   <script>
-    window.Telegram.WebApp.ready(); 
-    window.Telegram.WebApp.expand(); 
-    window.Telegram.WebApp.setHeaderColor('#0f172a');
+    window.Telegram.WebApp.ready(); window.Telegram.WebApp.expand(); window.Telegram.WebApp.setHeaderColor('#0f172a');
     
     const tgUser = window.Telegram.WebApp.initDataUnsafe?.user;
     const tgUsername = (tgUser && tgUser.username) ? tgUser.username : 'Гость';
@@ -170,52 +166,41 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2c3J4dWlicm92dW1haWtxcHRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4Nzc0NTYsImV4cCI6MjEwMDQ1MzQ1Nn0.uKkIbZi7I0Q0jL0oMMq5k4ABQ_ge18yJo7tYSB_PYRI';
     const baseHeaders = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' };
 
-    let allMatches = []; 
-    let allUsers = []; 
-    let currentRound = 'Группы'; 
-    let editModeMatchId = null; 
-    let proposeModeMatchId = null;
+    let allMatches = []; let allUsers = []; let currentRound = 'Группы'; let editModeMatchId = null; let proposeModeMatchId = null;
     let isAdminMode = (telegramId === ADMIN_ID);
-
-    // Переменные для модалки бомбардиров
-    let activeScorerMatchId = null;
-    let activeScorerPlayerNum = null; // 1 или 2
-    let activeScorersTemp = {};
+    let activeScorerMatchId = null; let activeScorerPlayerNum = null; let activeScorersTemp = {};
 
     if (telegramId === ADMIN_ID) {
       document.getElementById('admin-toggle-btn').classList.remove('hidden');
-      if (isAdminMode) {
-          document.getElementById('admin-panel').classList.remove('hidden');
-      }
+      if (isAdminMode) document.getElementById('admin-panel').classList.remove('hidden');
     }
 
     window.toggleAdminMode = function() {
       isAdminMode = !isAdminMode;
       const btn = document.getElementById('admin-toggle-btn');
       if (isAdminMode) {
-        btn.innerHTML = '👁️ Выйти из режима Админа'; 
-        btn.className = 'w-full bg-slate-700 hover:bg-slate-600 py-2 mt-4 rounded-xl text-xs font-bold text-white transition';
+        btn.innerHTML = '👁️ Выйти из режима Админа'; btn.className = 'w-full bg-slate-700 hover:bg-slate-600 py-2 mt-4 rounded-xl text-xs font-bold text-white transition';
         document.getElementById('admin-panel').classList.remove('hidden');
       } else {
-        btn.innerHTML = '👑 Войти в режим Админа'; 
-        btn.className = 'w-full bg-blue-600 hover:bg-blue-500 py-2 mt-4 rounded-xl text-xs font-bold text-white transition shadow-lg shadow-blue-500/20';
+        btn.innerHTML = '👑 Войти в режим Админа'; btn.className = 'w-full bg-blue-600 hover:bg-blue-500 py-2 mt-4 rounded-xl text-xs font-bold text-white transition shadow-lg shadow-blue-500/20';
         document.getElementById('admin-panel').classList.add('hidden');
       }
       loadTournament();
     }
 
-    function getMyName() { 
-        let me = allUsers.find(u => u.id === telegramId); 
-        return me ? me.username : tgUsername; 
-    }
+    function getMyName() { let me = allUsers.find(u => u.id === telegramId); return me ? me.username : tgUsername; }
 
     function generateProfileHtml(user, history) {
-      let squadImg = user.current_squad_url 
-        ? `<img src="${user.current_squad_url}" class="w-full h-auto rounded-lg border border-slate-700/50 mt-2 shadow-lg">` 
-        : `<div class="text-xs text-slate-500 bg-slate-900/50 p-4 rounded-lg border border-slate-800 text-center mt-2">Состав не загружен</div>`;
-      
+      let squadImg = user.current_squad_url ? `<img src="${user.current_squad_url}" class="w-full h-auto rounded-lg border border-slate-700/50 mt-2 shadow-lg">` : `<div class="text-xs text-slate-500 bg-slate-900/50 p-4 rounded-lg border border-slate-800 text-center mt-2">Состав не загружен</div>`;
+      let diff = (user.goals_for || 0) - (user.goals_against || 0);
+      let diffStr = diff > 0 ? `+${diff}` : diff;
+      let diffColor = diff > 0 ? 'text-green-400' : (diff < 0 ? 'text-red-400' : 'text-white');
+
       let historyHtml = (history && history.length > 0) ? history.map(h => `<div class="bg-slate-900/70 p-4 rounded-xl border border-slate-700/50 mb-3 relative overflow-hidden"><div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div><div class="font-bold text-sm text-blue-400 mb-2 pl-2">${h.tournament_name || 'Архивный турнир'}</div><div class="grid grid-cols-3 gap-2 text-center text-xs bg-slate-900 p-2 rounded-lg text-slate-400 mb-3"><div>Поб: <span class="text-white font-bold">${h.wins} / ${h.losses}</span></div><div>Голы: <span class="text-white font-bold">${h.goals_for}:${h.goals_against}</span></div><div>Очки: <span class="text-blue-400 font-bold">${h.wins * 3}</span></div></div>${h.squad_url ? `<div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Состав на турнире:</div><img src="${h.squad_url}" class="w-full h-auto rounded-lg border border-slate-800">` : ''}</div>`).join('') : `<div class="text-xs text-slate-500 text-center py-4 bg-slate-900/50 rounded-xl border border-slate-800">Завершенных турниров пока нет.</div>`;
-      return `<div class="flex items-center space-x-4 mb-5 pb-5 border-b border-slate-700/50"><div class="w-16 h-16 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-2xl font-bold shadow-lg border-2 border-slate-800 flex-shrink-0">${user.username ? user.username.charAt(0).toUpperCase() : 'U'}</div><div class="overflow-hidden"><h2 class="text-xl font-bold text-white leading-tight truncate">${user.username}</h2><div class="inline-block mt-1 px-2 py-0.5 bg-blue-900/50 border border-blue-500/30 rounded text-xs text-blue-400 font-semibold">${user.platform}</div></div></div><div class="mb-6"><h3 class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-2">Статистика текущего турнира</h3><div class="grid grid-cols-4 gap-2 text-center bg-slate-900/80 p-3 rounded-xl border border-slate-700/50 shadow-inner"><div><div class="text-[10px] text-slate-500 uppercase">Очки</div><div class="font-bold text-blue-400 text-lg">${(user.wins || 0) * 3}</div></div><div><div class="text-[10px] text-slate-500 uppercase">Поб</div><div class="font-bold text-white text-lg">${user.wins || 0}</div></div><div><div class="text-[10px] text-slate-500 uppercase">Пор</div><div class="font-bold text-white text-lg">${user.losses || 0}</div></div><div><div class="text-[10px] text-slate-500 uppercase">Голы</div><div class="font-bold text-white text-sm mt-1">${user.goals_for || 0}:${user.goals_against || 0}</div></div></div></div><div class="mb-6"><h3 class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-2">Актуальный состав</h3>${squadImg}</div><div><h3 class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-3 flex items-center"><span class="mr-2">🏛️</span> Зал славы (История турниров)</h3>${historyHtml}</div>`;
+      
+      let banBtn = (isAdminMode && user.id !== telegramId) ? `<button onclick="toggleBan(${user.id}, ${user.is_banned})" class="w-full mt-4 py-2 rounded-xl text-xs font-bold text-white ${user.is_banned ? 'bg-green-600 hover:bg-green-500' : 'bg-red-700 hover:bg-red-600'} transition">${user.is_banned ? '✅ Разблокировать игрока' : '🚫 Забанить игрока'}</button>` : '';
+
+      return `<div class="flex items-center space-x-4 mb-5 pb-5 border-b border-slate-700/50"><div class="w-16 h-16 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-2xl font-bold shadow-lg border-2 border-slate-800 flex-shrink-0">${user.username ? user.username.charAt(0).toUpperCase() : 'U'}</div><div class="overflow-hidden"><h2 class="text-xl font-bold text-white leading-tight truncate">${user.username} ${user.is_banned ? '<span class="text-red-500 text-sm">(Бан)</span>' : ''}</h2><div class="inline-block mt-1 px-2 py-0.5 bg-blue-900/50 border border-blue-500/30 rounded text-xs text-blue-400 font-semibold">${user.platform}</div></div></div><div class="mb-6"><h3 class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-2">Статистика текущего турнира</h3><div class="grid grid-cols-4 gap-2 text-center bg-slate-900/80 p-3 rounded-xl border border-slate-700/50 shadow-inner"><div><div class="text-[10px] text-slate-500 uppercase">Очки</div><div class="font-bold text-blue-400 text-lg">${(user.wins || 0) * 3}</div></div><div><div class="text-[10px] text-slate-500 uppercase">Поб</div><div class="font-bold text-white text-lg">${user.wins || 0}</div></div><div><div class="text-[10px] text-slate-500 uppercase">Мячи</div><div class="font-bold text-white text-sm mt-1">${user.goals_for || 0}:${user.goals_against || 0}</div></div><div><div class="text-[10px] text-slate-500 uppercase">+/-</div><div class="font-bold ${diffColor} text-lg">${diffStr}</div></div></div></div><div class="mb-6"><h3 class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-2">Актуальный состав</h3>${squadImg}</div><div><h3 class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-3 flex items-center"><span class="mr-2">🏛️</span> Зал славы (История турниров)</h3>${historyHtml}</div>${banBtn}`;
     }
 
     window.openPlayerProfile = async function(userId) {
@@ -225,29 +210,33 @@
     }
     window.closePlayerProfile = function() { document.getElementById('public-profile-modal').classList.add('hidden'); }
 
+    window.toggleBan = async function(userId, currentStatus) {
+      Telegram.WebApp.showConfirm(currentStatus ? 'Точно разблокировать игрока?' : 'Точно ЗАБЛОКИРОВАТЬ игрока? Он не сможет зайти в турнир.', async function(c) {
+        if(c) {
+          await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${userId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ is_banned: !currentStatus }) });
+          closePlayerProfile(); await loadTournament();
+        }
+      });
+    }
+
     window.saveProfile = async function() {
       const newName = document.getElementById('profile-nickname').value.trim(); const newPlat = document.getElementById('profile-platform').value;
       if (!newName) return Telegram.WebApp.showAlert('Имя не может быть пустым!');
-      
       let oldName = getMyName();
       await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${telegramId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ username: newName, platform: newPlat }) });
-      
       if (oldName && oldName !== newName) {
         await fetch(`${SUPABASE_URL}/rest/v1/matches?player1=eq.${oldName}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ player1: newName }) });
         await fetch(`${SUPABASE_URL}/rest/v1/matches?player2=eq.${oldName}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ player2: newName }) });
         await fetch(`${SUPABASE_URL}/rest/v1/matches?proposed_by=eq.${oldName}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ proposed_by: newName }) });
       }
-      
       Telegram.WebApp.showAlert('Настройки профиля обновлены!'); await loadTournament();
     }
 
     window.switchTab = function(tabName) {
       document.querySelectorAll('.tab-content').forEach(el => { el.classList.remove('block'); el.classList.add('hidden'); });
       document.getElementById(`tab-${tabName}`).classList.remove('hidden'); document.getElementById(`tab-${tabName}`).classList.add('block');
-      
       document.querySelectorAll('.nav-btn').forEach(btn => { btn.classList.remove('text-blue-500'); btn.classList.add('text-slate-500'); });
       document.getElementById(`nav-${tabName}`).classList.remove('text-slate-500'); document.getElementById(`nav-${tabName}`).classList.add('text-blue-500');
-      
       const titleEl = document.getElementById('page-title'); 
       if (tabName === 'matches') titleEl.innerText = 'Расписание матчей'; 
       if (tabName === 'bracket') titleEl.innerText = 'Обзор турнира'; 
@@ -258,38 +247,20 @@
         document.getElementById('bracket-playoff-container').classList.add('hidden');
         document.getElementById('bracket-groups-container').classList.add('hidden');
         document.getElementById('bracket-scorers-container').classList.add('hidden');
-        
         document.getElementById('btn-bracket-playoff').className = 'flex-1 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition bg-transparent';
         document.getElementById('btn-bracket-groups').className = 'flex-1 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition bg-transparent';
         document.getElementById('btn-bracket-scorers').className = 'flex-1 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition bg-transparent';
 
-        if (tabType === 'playoff') {
-            document.getElementById('bracket-playoff-container').classList.remove('hidden');
-            document.getElementById('btn-bracket-playoff').className = 'flex-1 py-2 rounded-lg text-xs font-bold bg-indigo-600 text-white shadow-md transition';
-        } else if (tabType === 'groups') {
-            document.getElementById('bracket-groups-container').classList.remove('hidden');
-            document.getElementById('btn-bracket-groups').className = 'flex-1 py-2 rounded-lg text-xs font-bold bg-blue-600 text-white shadow-md transition';
-        } else if (tabType === 'scorers') {
-            document.getElementById('bracket-scorers-container').classList.remove('hidden');
-            document.getElementById('btn-bracket-scorers').className = 'flex-1 py-2 rounded-lg text-xs font-bold bg-yellow-600 text-white shadow-md transition';
-            renderScorers();
-        }
+        if (tabType === 'playoff') { document.getElementById('bracket-playoff-container').classList.remove('hidden'); document.getElementById('btn-bracket-playoff').className = 'flex-1 py-2 rounded-lg text-xs font-bold bg-indigo-600 text-white shadow-md transition'; }
+        else if (tabType === 'groups') { document.getElementById('bracket-groups-container').classList.remove('hidden'); document.getElementById('btn-bracket-groups').className = 'flex-1 py-2 rounded-lg text-xs font-bold bg-blue-600 text-white shadow-md transition'; }
+        else if (tabType === 'scorers') { document.getElementById('bracket-scorers-container').classList.remove('hidden'); document.getElementById('btn-bracket-scorers').className = 'flex-1 py-2 rounded-lg text-xs font-bold bg-yellow-600 text-white shadow-md transition'; renderScorers(); }
     }
 
     window.setRound = function(roundName) {
       currentRound = roundName;
-      document.querySelectorAll('#round-buttons button').forEach(btn => { 
-        let isHidden = btn.classList.contains('hidden');
-        btn.className = `px-5 py-2.5 rounded-full text-sm transition whitespace-nowrap ${isHidden ? 'hidden ' : ''} font-semibold bg-slate-800 text-slate-400`; 
-      });
-      
+      document.querySelectorAll('#round-buttons button').forEach(btn => { let isHidden = btn.classList.contains('hidden'); btn.className = `px-5 py-2.5 rounded-full text-sm transition whitespace-nowrap ${isHidden ? 'hidden ' : ''} font-semibold bg-slate-800 text-slate-400`; });
       let actId = (roundName === 'Группы') ? 'btn-groups' : (roundName === '1/16 финала') ? 'btn-1-16' : (roundName === '1/8 финала') ? 'btn-1-8' : (roundName === '1/4 финала') ? 'btn-1-4' : (roundName === 'Полуфинал') ? 'btn-semi' : (roundName === 'Финал') ? 'btn-final' : '';
-      if (actId) {
-        let btn = document.getElementById(actId);
-        let isHidden = btn.classList.contains('hidden');
-        btn.className = `px-5 py-2.5 rounded-full text-sm transition whitespace-nowrap ${isHidden ? 'hidden ' : ''} font-semibold bg-blue-500 text-white shadow-lg shadow-blue-500/30`;
-      }
-      
+      if (actId) { let btn = document.getElementById(actId); let isHidden = btn.classList.contains('hidden'); btn.className = `px-5 py-2.5 rounded-full text-sm transition whitespace-nowrap ${isHidden ? 'hidden ' : ''} font-semibold bg-blue-500 text-white shadow-lg shadow-blue-500/30`; }
       editModeMatchId = null; proposeModeMatchId = null; renderMatches();
     }
 
@@ -303,57 +274,32 @@
             let s1 = m.is_completed ? m.score1 : (m.proposed_by ? m.proposed_score1 : m.score1);
             let s2 = m.is_completed ? m.score2 : (m.proposed_by ? m.proposed_score2 : m.score2);
             let p1Style = (m.is_completed && s1 > s2) ? 'text-green-400 font-bold' : 'text-slate-200'; let p2Style = (m.is_completed && s2 > s1) ? 'text-green-400 font-bold' : 'text-slate-200';
-            let bgClass = m.is_completed ? 'bg-slate-900 text-white' : (m.proposed_by ? 'bg-yellow-900/50 text-yellow-400' : 'bg-slate-900 text-slate-500');
-            html += `<div class="bg-slate-800 rounded-lg border ${m.is_completed ? 'border-indigo-500/50' : (m.proposed_by ? 'border-yellow-500/50' : 'border-slate-700')} w-48 shadow-lg flex flex-col overflow-hidden relative">${m.is_completed ? '<div class="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>' : ''}<div class="flex justify-between items-center p-2 border-b border-slate-700/50 bg-slate-800/80"><span class="truncate w-3/4 text-xs ${p1Style} pl-2">${m.player1 || '?'}</span><span class="font-bold text-sm px-2 rounded ${bgClass}">${s1}</span></div><div class="flex justify-between items-center p-2 bg-slate-800/80"><span class="truncate w-3/4 text-xs ${p2Style} pl-2">${m.player2 || '?'}</span><span class="font-bold text-sm px-2 rounded ${bgClass}">${s2}</span></div></div>`;
+            let bgClass = m.is_completed ? 'bg-slate-900 text-white' : (m.is_disputed ? 'bg-red-900/80 text-red-400' : (m.proposed_by ? 'bg-yellow-900/50 text-yellow-400' : 'bg-slate-900 text-slate-500'));
+            html += `<div class="bg-slate-800 rounded-lg border ${m.is_completed ? 'border-indigo-500/50' : (m.is_disputed ? 'border-red-500' : (m.proposed_by ? 'border-yellow-500/50' : 'border-slate-700'))} w-48 shadow-lg flex flex-col overflow-hidden relative">${m.is_completed ? '<div class="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>' : ''}<div class="flex justify-between items-center p-2 border-b border-slate-700/50 bg-slate-800/80"><span class="truncate w-3/4 text-xs ${p1Style} pl-2">${m.player1 || '?'}</span><span class="font-bold text-sm px-2 rounded ${bgClass}">${s1}</span></div><div class="flex justify-between items-center p-2 bg-slate-800/80"><span class="truncate w-3/4 text-xs ${p2Style} pl-2">${m.player2 || '?'}</span><span class="font-bold text-sm px-2 rounded ${bgClass}">${s2}</span></div></div>`;
           }); html += `</div>`;
         }
       });
       document.getElementById('db-bracket').innerHTML = hasM ? html + '</div>' : `<div class="flex flex-col items-center justify-center py-10 text-slate-500"><span class="text-4xl mb-3">🕸️</span><span class="text-sm">Сетка плей-офф пока пуста.</span></div>`;
     }
 
-    // ЛОГИКА БОМБАРДИРОВ
     function renderScorers() {
         let scorerMap = {};
         allMatches.forEach(m => {
             if (!m.is_completed) return;
             if (m.scorers1 && Object.keys(m.scorers1).length > 0) {
-                for (let card in m.scorers1) {
-                    let key = card + '|' + m.player1;
-                    if (!scorerMap[key]) scorerMap[key] = { name: card, owner: m.player1, goals: 0 };
-                    scorerMap[key].goals += m.scorers1[card];
-                }
+                for (let card in m.scorers1) { let key = card + '|' + m.player1; if (!scorerMap[key]) scorerMap[key] = { name: card, owner: m.player1, goals: 0 }; scorerMap[key].goals += m.scorers1[card]; }
             }
             if (m.scorers2 && Object.keys(m.scorers2).length > 0) {
-                for (let card in m.scorers2) {
-                    let key = card + '|' + m.player2;
-                    if (!scorerMap[key]) scorerMap[key] = { name: card, owner: m.player2, goals: 0 };
-                    scorerMap[key].goals += m.scorers2[card];
-                }
+                for (let card in m.scorers2) { let key = card + '|' + m.player2; if (!scorerMap[key]) scorerMap[key] = { name: card, owner: m.player2, goals: 0 }; scorerMap[key].goals += m.scorers2[card]; }
             }
         });
-
         let topScorers = Object.values(scorerMap).sort((a,b) => b.goals - a.goals);
         const container = document.getElementById('db-scorers');
-
-        if (topScorers.length === 0) {
-            container.innerHTML = `<div class="text-center text-slate-500 text-sm bg-slate-800/50 p-4 rounded-xl border border-slate-700/30 flex flex-col items-center"><span class="text-2xl mb-2">🤷‍♂️</span><span>Никто еще не указал авторов голов.</span></div>`;
-            return;
-        }
-
+        if (topScorers.length === 0) { container.innerHTML = `<div class="text-center text-slate-500 text-sm bg-slate-800/50 p-4 rounded-xl border border-slate-700/30 flex flex-col items-center"><span class="text-2xl mb-2">🤷‍♂️</span><span>Никто еще не указал авторов голов.</span></div>`; return; }
         let html = '';
         topScorers.forEach((s, index) => {
             let medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `<span class="text-slate-500 text-xs w-4 inline-block text-center">${index+1}</span>`;
-            html += `
-            <div class="flex justify-between items-center bg-slate-800 p-3 rounded-xl border border-slate-700/50 shadow-sm mb-2">
-                <div class="flex items-center w-3/4 overflow-hidden">
-                    <div class="mr-3">${medal}</div>
-                    <div class="flex flex-col truncate">
-                        <span class="font-bold text-white text-sm truncate">${s.name}</span>
-                        <span class="text-[10px] text-slate-400 truncate">Команда: ${s.owner}</span>
-                    </div>
-                </div>
-                <div class="font-bold text-yellow-400 text-lg">${s.goals} <span class="text-[10px] text-slate-500 font-normal">⚽</span></div>
-            </div>`;
+            html += `<div class="flex justify-between items-center bg-slate-800 p-3 rounded-xl border border-slate-700/50 shadow-sm mb-2"><div class="flex items-center w-3/4 overflow-hidden"><div class="mr-3">${medal}</div><div class="flex flex-col truncate"><span class="font-bold text-white text-sm truncate">${s.name}</span><span class="text-[10px] text-slate-400 truncate">Команда: ${s.owner}</span></div></div><div class="font-bold text-yellow-400 text-lg">${s.goals} <span class="text-[10px] text-slate-500 font-normal">⚽</span></div></div>`;
         });
         container.innerHTML = html;
     }
@@ -364,75 +310,33 @@
     }
 
     window.openScorersModal = function(matchId, playerNum) {
-        activeScorerMatchId = matchId;
-        activeScorerPlayerNum = playerNum;
+        activeScorerMatchId = matchId; activeScorerPlayerNum = playerNum;
         let m = allMatches.find(x => x.id === matchId);
         activeScorersTemp = playerNum === 1 ? {...(m.scorers1 || {})} : {...(m.scorers2 || {})};
-        
-        document.getElementById('scorer-name').value = '';
-        document.getElementById('scorer-goals').value = '';
-        renderScorersModalList();
-        document.getElementById('scorers-modal').classList.remove('hidden');
+        document.getElementById('scorer-name').value = ''; document.getElementById('scorer-goals').value = '';
+        renderScorersModalList(); document.getElementById('scorers-modal').classList.remove('hidden');
     }
-
-    window.closeScorersModal = function() {
-        document.getElementById('scorers-modal').classList.add('hidden');
-        activeScorerMatchId = null;
-        activeScorerPlayerNum = null;
-    }
-
+    window.closeScorersModal = function() { document.getElementById('scorers-modal').classList.add('hidden'); activeScorerMatchId = null; activeScorerPlayerNum = null; }
     window.addScorerToList = function() {
-        let name = document.getElementById('scorer-name').value.trim();
-        let goals = parseInt(document.getElementById('scorer-goals').value);
+        let name = document.getElementById('scorer-name').value.trim(); let goals = parseInt(document.getElementById('scorer-goals').value);
         if (!name || isNaN(goals) || goals < 1) return Telegram.WebApp.showAlert('Введи корректное имя карточки и количество голов!');
-        
-        if (activeScorersTemp[name]) {
-            activeScorersTemp[name] += goals;
-        } else {
-            activeScorersTemp[name] = goals;
-        }
-        
-        document.getElementById('scorer-name').value = '';
-        document.getElementById('scorer-goals').value = '';
-        renderScorersModalList();
+        if (activeScorersTemp[name]) activeScorersTemp[name] += goals; else activeScorersTemp[name] = goals;
+        document.getElementById('scorer-name').value = ''; document.getElementById('scorer-goals').value = ''; renderScorersModalList();
     }
-
-    window.removeScorerFromList = function(name) {
-        delete activeScorersTemp[name];
-        renderScorersModalList();
-    }
-
+    window.removeScorerFromList = function(name) { delete activeScorersTemp[name]; renderScorersModalList(); }
     function renderScorersModalList() {
         let container = document.getElementById('current-scorers-list');
-        if (Object.keys(activeScorersTemp).length === 0) {
-            container.innerHTML = '<div class="text-xs text-slate-500 text-center">Пока не добавлено ни одного игрока</div>';
-            return;
-        }
+        if (Object.keys(activeScorersTemp).length === 0) { container.innerHTML = '<div class="text-xs text-slate-500 text-center">Пока не добавлено ни одного игрока</div>'; return; }
         let html = '';
-        for (let name in activeScorersTemp) {
-            html += `
-            <div class="flex justify-between items-center bg-slate-900 p-2 rounded-lg border border-slate-700">
-                <span class="text-sm text-slate-300 font-bold">${name} <span class="text-yellow-400">x${activeScorersTemp[name]}</span></span>
-                <button onclick="removeScorerFromList('${name}')" class="text-red-400/70 hover:text-red-400 text-xs px-2 py-1 bg-slate-800 rounded">✕</button>
-            </div>`;
-        }
+        for (let name in activeScorersTemp) { html += `<div class="flex justify-between items-center bg-slate-900 p-2 rounded-lg border border-slate-700"><span class="text-sm text-slate-300 font-bold">${name} <span class="text-yellow-400">x${activeScorersTemp[name]}</span></span><button onclick="removeScorerFromList('${name}')" class="text-red-400/70 hover:text-red-400 text-xs px-2 py-1 bg-slate-800 rounded">✕</button></div>`; }
         container.innerHTML = html;
     }
-
     window.saveScorersToDb = async function() {
         let payload = {};
         if (activeScorerPlayerNum === 1) payload.scorers1 = activeScorersTemp;
         if (activeScorerPlayerNum === 2) payload.scorers2 = activeScorersTemp;
-
-        await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${activeScorerMatchId}`, { 
-            method: 'PATCH', 
-            headers: baseHeaders, 
-            body: JSON.stringify(payload) 
-        });
-
-        closeScorersModal();
-        Telegram.WebApp.showAlert('Авторы голов сохранены!');
-        await loadTournament();
+        await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${activeScorerMatchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify(payload) });
+        closeScorersModal(); Telegram.WebApp.showAlert('Авторы голов сохранены!'); await loadTournament();
     }
 
     async function sendNotification(username, text) { let user = allUsers.find(u => u.username === username); if (user && user.id) { try { await fetch(`${SUPABASE_URL}/rest/v1/notifications`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ telegram_id: user.id, message: text }) }); } catch(e) {} } }
@@ -447,111 +351,47 @@
         if (editModeMatchId === m.id) return `<div class="bg-slate-800 rounded-2xl p-5 border border-yellow-500/50 shadow-sm"><div class="text-center text-xs text-yellow-400 mb-2 font-bold">Редактирование</div><div class="space-y-3"><div class="grid grid-cols-2 gap-2"><input id="edit-p1-${m.id}" type="text" value="${m.player1}" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"><input id="edit-p2-${m.id}" type="text" value="${m.player2}" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"></div><div class="flex space-x-2"><button onclick="saveMatchEdit(${m.id})" class="flex-1 bg-green-600 hover:bg-green-500 py-2 rounded-xl text-xs font-semibold text-white">💾</button><button onclick="cancelEdit()" class="flex-1 bg-slate-600 hover:bg-slate-500 py-2 rounded-xl text-xs font-semibold text-white">Отмена</button></div></div></div>`;
 
         const isParticipant = (m.player1 === myName || m.player2 === myName);
-        let displayScore = m.is_completed ? `<span class="text-blue-400 text-lg">${m.score1} : ${m.score2}</span>` : (m.proposed_by ? `<div class="text-center flex flex-col items-center"><span class="text-yellow-400 text-lg">${m.proposed_score1} : ${m.proposed_score2}</span><span class="text-[9px] text-yellow-500/80 uppercase">Ожидает</span></div>` : `<span class="text-slate-500 text-lg">0 : 0</span>`);
+        let displayScore = m.is_completed ? `<span class="text-blue-400 text-lg">${m.score1} : ${m.score2}</span>` : ((m.proposed_by && !m.is_disputed) ? `<div class="text-center flex flex-col items-center"><span class="text-yellow-400 text-lg">${m.proposed_score1} : ${m.proposed_score2}</span><span class="text-[9px] text-yellow-500/80 uppercase">Ожидает</span></div>` : (m.is_disputed ? `<span class="text-red-500 text-lg font-bold">Спор</span>` : `<span class="text-slate-500 text-lg">0 : 0</span>`));
         
         let playerActions = '';
         if (!m.is_completed && isParticipant) {
-          if (proposeModeMatchId === m.id) {
-            playerActions = `
-              <div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-2">
-                <div class="text-xs text-center text-blue-400 mb-1">Какой итоговый счет?</div>
-                <div class="flex justify-center space-x-2 items-center mb-2">
-                  <input id="prop-s1-${m.id}" type="number" min="0" class="w-14 bg-slate-900 border border-slate-600 text-center rounded-lg py-1 text-white font-bold" placeholder="0">
-                  <span class="text-slate-400 font-bold">:</span>
-                  <input id="prop-s2-${m.id}" type="number" min="0" class="w-14 bg-slate-900 border border-slate-600 text-center rounded-lg py-1 text-white font-bold" placeholder="0">
-                </div>
-                <div class="flex space-x-2">
-                  <button onclick="submitPropose(${m.id})" class="flex-1 bg-green-600 hover:bg-green-500 py-2 rounded-lg text-xs font-semibold text-white transition">Отправить</button>
-                  <button onclick="cancelProposeMode()" class="flex-1 bg-slate-600 hover:bg-slate-500 py-2 rounded-lg text-xs font-semibold text-white transition">Отмена</button>
-                </div>
-              </div>`;
+          if (m.is_disputed) {
+              playerActions = `<div class="mt-4 pt-3 border-t border-slate-700/50 text-center text-xs text-red-400 font-bold">⚠️ Вызван Администратор. Ожидайте решения.</div>`;
+          } else if (proposeModeMatchId === m.id) {
+            playerActions = `<div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-2"><div class="text-xs text-center text-blue-400 mb-1">Какой итоговый счет?</div><div class="flex justify-center space-x-2 items-center mb-2"><input id="prop-s1-${m.id}" type="number" min="0" class="w-14 bg-slate-900 border border-slate-600 text-center rounded-lg py-1 text-white font-bold" placeholder="0"><span class="text-slate-400 font-bold">:</span><input id="prop-s2-${m.id}" type="number" min="0" class="w-14 bg-slate-900 border border-slate-600 text-center rounded-lg py-1 text-white font-bold" placeholder="0"></div><div class="flex space-x-2"><button onclick="submitPropose(${m.id})" class="flex-1 bg-green-600 hover:bg-green-500 py-2 rounded-lg text-xs font-semibold text-white transition">Отправить</button><button onclick="cancelProposeMode()" class="flex-1 bg-slate-600 hover:bg-slate-500 py-2 rounded-lg text-xs font-semibold text-white transition">Отмена</button></div></div>`;
           } else if (!m.proposed_by) {
-            playerActions = `
-              <div class="mt-4 pt-3 border-t border-slate-700/50">
-                <button onclick="openProposeMode(${m.id})" class="w-full bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-500/20 py-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">📝</span> Ввести итоговый счет</button>
-              </div>`;
+            playerActions = `<div class="mt-4 pt-3 border-t border-slate-700/50"><button onclick="openProposeMode(${m.id})" class="w-full bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-500/20 py-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">📝</span> Ввести итоговый счет</button></div>`;
           } else if (m.proposed_by === myName) {
-            playerActions = `
-              <div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-3">
-                <div class="text-center text-[11px] text-yellow-400 animate-pulse">Ожидаем подтверждения от соперника...</div>
-                <button onclick="rejectScore(${m.id})" class="bg-slate-700 hover:bg-slate-600 py-2 rounded-lg text-xs font-semibold text-white transition">Отменить предложение</button>
-              </div>`;
+            playerActions = `<div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-3"><div class="text-center text-[11px] text-yellow-400 animate-pulse">Ожидаем подтверждения от соперника...</div><button onclick="rejectScore(${m.id})" class="bg-slate-700 hover:bg-slate-600 py-2 rounded-lg text-xs font-semibold text-white transition">Отменить предложение</button></div>`;
           } else {
-            playerActions = `
-              <div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-3">
-                <div class="text-center text-[11px] text-yellow-400 font-bold">Соперник указал счет. Подтверждаешь?</div>
-                <div class="flex space-x-2">
-                  <button onclick="confirmScorePlayer(${m.id}, '${m.player1}', '${m.player2}', ${m.proposed_score1}, ${m.proposed_score2})" class="flex-1 bg-green-600 hover:bg-green-500 py-2.5 rounded-lg text-xs font-bold text-white transition shadow-lg shadow-green-500/20">✅ Да</button>
-                  <button onclick="rejectScore(${m.id})" class="flex-1 bg-red-600 hover:bg-red-500 py-2.5 rounded-lg text-xs font-bold text-white transition shadow-lg shadow-red-500/20">❌ Нет</button>
-                </div>
-              </div>`;
+            playerActions = `<div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-3"><div class="text-center text-[11px] text-yellow-400 font-bold">Соперник указал счет. Подтверждаешь?</div><div class="flex space-x-2"><button onclick="confirmScorePlayer(${m.id}, '${m.player1}', '${m.player2}', ${m.proposed_score1}, ${m.proposed_score2})" class="flex-1 bg-green-600 hover:bg-green-500 py-2.5 rounded-lg text-xs font-bold text-white transition shadow-lg shadow-green-500/20">✅ Да</button><button onclick="disputeScore(${m.id})" class="flex-1 bg-red-600 hover:bg-red-500 py-2.5 rounded-lg text-xs font-bold text-white transition shadow-lg shadow-red-500/20">❌ Нет (Спор)</button></div></div>`;
           }
         }
 
-        // БЛОК БОМБАРДИРОВ (ДЛЯ ЗАВЕРШЕННЫХ МАТЧЕЙ)
         let scorersHtml = '';
         if (m.is_completed) {
-            let s1Text = formatScorersText(m.scorers1);
-            let s2Text = formatScorersText(m.scorers2);
-            
+            let s1Text = formatScorersText(m.scorers1); let s2Text = formatScorersText(m.scorers2);
             let btn1 = (myName === m.player1 && m.score1 > 0) ? `<button onclick="openScorersModal(${m.id}, 1)" class="mt-1 text-[9px] bg-slate-700 hover:bg-slate-600 px-2 py-0.5 rounded text-blue-400">Указать авторов</button>` : '';
             let btn2 = (myName === m.player2 && m.score2 > 0) ? `<button onclick="openScorersModal(${m.id}, 2)" class="mt-1 text-[9px] bg-slate-700 hover:bg-slate-600 px-2 py-0.5 rounded text-blue-400">Указать авторов</button>` : '';
-
-            if (s1Text || s2Text || btn1 || btn2) {
-                scorersHtml = `
-                <div class="mt-3 pt-2 border-t border-slate-700/50 flex justify-between text-[10px] text-slate-400 leading-tight">
-                    <div class="w-1/2 pr-1 text-left">${s1Text ? `<span class="text-slate-300">⚽ ${s1Text}</span>` : ''} ${btn1}</div>
-                    <div class="w-1/2 pl-1 text-right">${s2Text ? `<span class="text-slate-300">${s2Text} ⚽</span>` : ''} ${btn2}</div>
-                </div>`;
-            }
+            if (s1Text || s2Text || btn1 || btn2) { scorersHtml = `<div class="mt-3 pt-2 border-t border-slate-700/50 flex justify-between text-[10px] text-slate-400 leading-tight"><div class="w-1/2 pr-1 text-left">${s1Text ? `<span class="text-slate-300">⚽ ${s1Text}</span>` : ''} ${btn1}</div><div class="w-1/2 pl-1 text-right">${s2Text ? `<span class="text-slate-300">${s2Text} ⚽</span>` : ''} ${btn2}</div></div>`; }
         }
 
         let adminActions = '';
         if (isAdmin) {
           if (m.is_completed) {
-            adminActions = `
-              <div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-2">
-                <div class="text-center text-xs text-green-400 font-semibold">✅ Завершен</div>
-                <button onclick="rollbackMatch(${m.id}, '${m.player1}', '${m.player2}', ${m.score1}, ${m.score2})" class="bg-yellow-600/30 hover:bg-yellow-600/50 text-yellow-300 py-1.5 rounded-lg text-xs font-semibold transition">⏪ Отменить (Админ)</button>
-              </div>`;
+            adminActions = `<div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-2"><div class="text-center text-xs text-green-400 font-semibold">✅ Завершен</div><button onclick="rollbackMatch(${m.id}, '${m.player1}', '${m.player2}', ${m.score1}, ${m.score2})" class="bg-yellow-600/30 hover:bg-yellow-600/50 text-yellow-300 py-1.5 rounded-lg text-xs font-semibold transition">⏪ Отменить (Админ)</button></div>`;
+          } else if (m.is_disputed) {
+            adminActions = `<div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-2"><div class="text-[10px] text-red-500 text-center font-bold uppercase tracking-wider">⚠️ Спорный матч</div><div class="flex justify-center space-x-2"><button onclick="changeScore(${m.id}, ${m.score1 + 1}, ${m.score2}, '${m.player1}', '${m.player2}')" class="bg-slate-700 px-2 py-1 rounded text-xs">+1 к ${m.player1}</button><button onclick="changeScore(${m.id}, ${m.score1}, ${m.score2 + 1}, '${m.player1}', '${m.player2}')" class="bg-slate-700 px-2 py-1 rounded text-xs">+1 к ${m.player2}</button><button onclick="resetScore(${m.id}, '${m.player1}', '${m.player2}')" class="bg-red-900/40 text-red-300 px-2 py-1 rounded text-xs">Сброс</button></div><button onclick="resolveDispute(${m.id}, '${m.player1}', '${m.player2}', ${m.score1}, ${m.score2})" class="bg-red-600 hover:bg-red-500 py-2 rounded-lg text-xs font-semibold text-white transition">⚖️ Разрешить спор (Принудительно)</button></div>`;
           } else if (m.proposed_by) {
-            adminActions = `
-              <div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-2">
-                <div class="text-[10px] text-yellow-500 text-center font-bold uppercase tracking-wider">Ожидает подтверждения</div>
-                <button onclick="confirmScorePlayer(${m.id}, '${m.player1}', '${m.player2}', ${m.proposed_score1}, ${m.proposed_score2})" class="bg-green-600 hover:bg-green-500 py-2 rounded-lg text-xs font-semibold text-white transition">✅ Подтвердить принудительно</button>
-                <button onclick="rejectScore(${m.id})" class="bg-slate-700 hover:bg-slate-600 py-1.5 rounded-lg text-xs font-semibold text-white transition">Отменить счет (Админ)</button>
-              </div>`;
+            adminActions = `<div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-2"><div class="text-[10px] text-yellow-500 text-center font-bold uppercase tracking-wider">Ожидает подтверждения</div><button onclick="confirmScorePlayer(${m.id}, '${m.player1}', '${m.player2}', ${m.proposed_score1}, ${m.proposed_score2})" class="bg-green-600 hover:bg-green-500 py-2 rounded-lg text-xs font-semibold text-white transition">✅ Подтвердить принудительно</button><button onclick="rejectScore(${m.id})" class="bg-slate-700 hover:bg-slate-600 py-1.5 rounded-lg text-xs font-semibold text-white transition">Отменить счет (Админ)</button></div>`;
           } else {
-            adminActions = `
-              <div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-2">
-                <div class="text-[10px] text-slate-500 text-center">ПАНЕЛЬ АДМИНА</div>
-                <div class="flex justify-center space-x-2">
-                  <button onclick="changeScore(${m.id}, ${m.score1 + 1}, ${m.score2}, '${m.player1}', '${m.player2}')" class="bg-slate-700 px-2 py-1 rounded text-xs">+1 к ${m.player1}</button>
-                  <button onclick="changeScore(${m.id}, ${m.score1}, ${m.score2 + 1}, '${m.player1}', '${m.player2}')" class="bg-slate-700 px-2 py-1 rounded text-xs">+1 к ${m.player2}</button>
-                  <button onclick="resetScore(${m.id}, '${m.player1}', '${m.player2}')" class="bg-red-900/40 text-red-300 px-2 py-1 rounded text-xs">Сброс</button>
-                </div>
-                <button onclick="finishMatch(${m.id}, '${m.player1}', '${m.player2}', ${m.score1}, ${m.score2})" class="bg-green-600/50 hover:bg-green-500/70 py-2 rounded-lg text-xs font-semibold text-white transition">🏁 Завершить (по кнопкам)</button>
-              </div>`;
+            adminActions = `<div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-2"><div class="text-[10px] text-slate-500 text-center">ПАНЕЛЬ АДМИНА</div><div class="flex justify-center space-x-2"><button onclick="changeScore(${m.id}, ${m.score1 + 1}, ${m.score2}, '${m.player1}', '${m.player2}')" class="bg-slate-700 px-2 py-1 rounded text-xs">+1 к ${m.player1}</button><button onclick="changeScore(${m.id}, ${m.score1}, ${m.score2 + 1}, '${m.player1}', '${m.player2}')" class="bg-slate-700 px-2 py-1 rounded text-xs">+1 к ${m.player2}</button><button onclick="resetScore(${m.id}, '${m.player1}', '${m.player2}')" class="bg-red-900/40 text-red-300 px-2 py-1 rounded text-xs">Сброс</button></div><button onclick="finishMatch(${m.id}, '${m.player1}', '${m.player2}', ${m.score1}, ${m.score2})" class="bg-green-600/50 hover:bg-green-500/70 py-2 rounded-lg text-xs font-semibold text-white transition">🏁 Завершить (по кнопкам)</button></div>`;
           }
         } else if (m.is_completed && !isParticipant) {
           adminActions = `<div class="mt-4 pt-3 border-t border-slate-700/50 text-center text-xs text-green-400 font-semibold">✅ Завершен</div>`;
         }
         
-        return `
-          <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700/50 shadow-sm ${m.is_completed ? 'opacity-80' : ''}">
-            <div class="flex justify-between items-center mb-2">
-                <span class="text-xs text-slate-400">${m.round}</span>
-                ${(isAdmin && !m.is_completed) ? `<div class="space-x-2"><button onclick="editMatchMode(${m.id})" class="text-slate-400 hover:text-white text-xs">✏️</button><button onclick="deleteMatch(${m.id})" class="text-red-400/70 hover:text-red-400 text-xs">✕</button></div>` : ''}
-            </div>
-            <div class="flex justify-between items-center font-bold text-slate-200">
-                <span class="w-2/5 text-right truncate pr-2">${m.player1}</span>
-                <span class="w-1/5 flex justify-center">${displayScore}</span>
-                <span class="w-2/5 text-left truncate pl-2">${m.player2}</span>
-            </div>
-            ${scorersHtml}
-            ${playerActions}
-            ${adminActions}
-          </div>`;
+        return `<div class="bg-slate-800 rounded-2xl p-5 border ${m.is_disputed ? 'border-red-500/80 shadow-red-500/20' : 'border-slate-700/50'} shadow-sm ${m.is_completed ? 'opacity-80' : ''}"><div class="flex justify-between items-center mb-2"><span class="text-xs ${m.is_disputed ? 'text-red-400 font-bold' : 'text-slate-400'}">${m.round}</span>${(isAdmin && !m.is_completed) ? `<div class="space-x-2"><button onclick="editMatchMode(${m.id})" class="text-slate-400 hover:text-white text-xs">✏️</button><button onclick="deleteMatch(${m.id})" class="text-red-400/70 hover:text-red-400 text-xs">✕</button></div>` : ''}</div><div class="flex justify-between items-center font-bold text-slate-200"><span class="w-2/5 text-right truncate pr-2">${m.player1}</span><span class="w-1/5 flex justify-center">${displayScore}</span><span class="w-2/5 text-left truncate pl-2">${m.player2}</span></div>${scorersHtml}${playerActions}${adminActions}</div>`;
       }).join('');
     }
 
@@ -559,10 +399,9 @@
     window.cancelProposeMode = function() { proposeModeMatchId = null; renderMatches(); }
     
     window.submitPropose = async function(matchId) {
-      let myName = getMyName();
-      let s1 = document.getElementById(`prop-s1-${matchId}`).value; let s2 = document.getElementById(`prop-s2-${matchId}`).value;
+      let myName = getMyName(); let s1 = document.getElementById(`prop-s1-${matchId}`).value; let s2 = document.getElementById(`prop-s2-${matchId}`).value;
       if (s1 === '' || s2 === '') return Telegram.WebApp.showAlert('Введите счет для обоих игроков!');
-      await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ proposed_score1: parseInt(s1), proposed_score2: parseInt(s2), proposed_by: myName }) });
+      await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ proposed_score1: parseInt(s1), proposed_score2: parseInt(s2), proposed_by: myName, is_disputed: false }) });
       let m = allMatches.find(x => x.id === matchId); let opp = (m.player1 === myName) ? m.player2 : m.player1;
       await sendNotification(opp, `⚠️ Соперник ввел счет матча (${s1}:${s2}). Зайди в турнир и подтверди его!`);
       proposeModeMatchId = null; await loadTournament();
@@ -570,7 +409,27 @@
     
     window.rejectScore = function(matchId) {
       Telegram.WebApp.showConfirm('Отменить этот предложенный счет?', async function(confirmed) {
-        if(confirmed) { await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ proposed_score1: null, proposed_score2: null, proposed_by: null }) }); await loadTournament(); }
+        if(confirmed) { await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ proposed_score1: null, proposed_score2: null, proposed_by: null, is_disputed: false }) }); await loadTournament(); }
+      });
+    }
+
+    // НОВАЯ ФУНКЦИЯ ДЛЯ СПОРОВ
+    window.disputeScore = function(matchId) {
+      Telegram.WebApp.showConfirm('Счет неверный? Отклонить и вызвать Администратора?', async function(confirmed) {
+        if(confirmed) { 
+            await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ is_disputed: true }) }); 
+            Telegram.WebApp.showAlert('Администратор уведомлен. Пожалуйста, предоставьте скриншоты в чат.');
+            await loadTournament(); 
+        }
+      });
+    }
+
+    window.resolveDispute = function(matchId, p1Name, p2Name, s1, s2) {
+      Telegram.WebApp.showConfirm(`Принудительно разрешить спор со счетом ${s1}:${s2} и завершить матч?`, async function(confirmed) {
+        if(confirmed) {
+            await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ is_disputed: false }) }); 
+            executeFinishMatch(matchId, p1Name, p2Name, s1, s2);
+        }
       });
     }
     
@@ -593,52 +452,33 @@
     }
 
     async function checkAndAdvancePlayoffs(finishedRoundName) {
-      const playoffOrder = ['1/16 финала', '1/8 финала', '1/4 финала', 'Полуфинал', 'Финал'];
-      let roundIndex = playoffOrder.indexOf(finishedRoundName);
+      const playoffOrder = ['1/16 финала', '1/8 финала', '1/4 финала', 'Полуфинал', 'Финал']; let roundIndex = playoffOrder.indexOf(finishedRoundName);
       if (roundIndex === -1 || roundIndex === playoffOrder.length - 1) return;
-
-      let nextRound = playoffOrder[roundIndex + 1];
-      let matchesInRound = allMatches.filter(m => m.round === finishedRoundName);
+      let nextRound = playoffOrder[roundIndex + 1]; let matchesInRound = allMatches.filter(m => m.round === finishedRoundName);
       matchesInRound.sort((a, b) => a.id - b.id);
-
       if (matchesInRound.length === 0 || !matchesInRound.every(m => m.is_completed)) return;
       if (allMatches.some(m => m.round === nextRound)) return;
-
       let promises = [];
       for (let i = 0; i < matchesInRound.length; i += 2) {
-        let m1 = matchesInRound[i]; let m2 = matchesInRound[i+1];
-        if (!m1 || !m2) continue;
-
-        let w1 = m1.score1 > m1.score2 ? m1.player1 : m1.player2;
-        let w2 = m2.score1 > m2.score2 ? m2.player1 : m2.player2;
-
+        let m1 = matchesInRound[i]; let m2 = matchesInRound[i+1]; if (!m1 || !m2) continue;
+        let w1 = m1.score1 > m1.score2 ? m1.player1 : m1.player2; let w2 = m2.score1 > m2.score2 ? m2.player1 : m2.player2;
         if (w1 && w2) {
           promises.push(fetch(`${SUPABASE_URL}/rest/v1/matches`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ player1: w1, player2: w2, score1: 0, score2: 0, round: nextRound, is_completed: false }) }));
-          sendNotification(w1, `🔥 Все матчи раунда сыграны! Ты прошел дальше! Твой соперник в ${nextRound}: ${w2}`);
-          sendNotification(w2, `🔥 Все матчи раунда сыграны! Ты прошел дальше! Твой соперник в ${nextRound}: ${w1}`);
+          sendNotification(w1, `🔥 Все матчи раунда сыграны! Ты прошел дальше! Твой соперник в ${nextRound}: ${w2}`); sendNotification(w2, `🔥 Все матчи раунда сыграны! Ты прошел дальше! Твой соперник в ${nextRound}: ${w1}`);
         }
       }
-
-      if (promises.length > 0) {
-        await Promise.all(promises);
-        Telegram.WebApp.showAlert(`Все матчи ${finishedRoundName} завершены! Сетка автоматически продвинулась в ${nextRound}.`);
-      }
+      if (promises.length > 0) { await Promise.all(promises); Telegram.WebApp.showAlert(`Все матчи ${finishedRoundName} завершены! Сетка автоматически продвинулась в ${nextRound}.`); }
     }
 
     async function executeFinishMatch(matchId, p1Name, p2Name, s1, s2) {
       let p1 = allUsers.find(u => u.username === p1Name); let p2 = allUsers.find(u => u.username === p2Name);
       if (p1) { let w = p1.wins||0; let l = p1.losses||0; if(s1>s2) w++; if(s1<s2) l++; await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p1.id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: w, losses: l, goals_for: (p1.goals_for||0)+s1, goals_against: (p1.goals_against||0)+s2 }) }); }
       if (p2) { let w = p2.wins||0; let l = p2.losses||0; if(s2>s1) w++; if(s2<s1) l++; await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p2.id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: w, losses: l, goals_for: (p2.goals_for||0)+s2, goals_against: (p2.goals_against||0)+s1 }) }); }
-      await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ is_completed: true, score1: s1, score2: s2, proposed_score1: null, proposed_score2: null, proposed_by: null }) });
+      await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ is_completed: true, score1: s1, score2: s2, proposed_score1: null, proposed_score2: null, proposed_by: null, is_disputed: false }) });
       await sendNotification(p1Name, `🏁 Матч завершен! ${p1Name} [${s1} : ${s2}] ${p2Name}`); await sendNotification(p2Name, `🏁 Матч завершен! ${p1Name} [${s1} : ${s2}] ${p2Name}`);
-      
-      let mRes = await fetch(`${SUPABASE_URL}/rest/v1/matches?select=*`, { headers: baseHeaders }); 
-      allMatches = await mRes.json();
-      
+      let mRes = await fetch(`${SUPABASE_URL}/rest/v1/matches?select=*`, { headers: baseHeaders }); allMatches = await mRes.json();
       let finishedMatch = allMatches.find(m => m.id === matchId);
-      if (finishedMatch && finishedMatch.round !== 'Группы' && finishedMatch.round !== 'Финал') {
-         await checkAndAdvancePlayoffs(finishedMatch.round);
-      }
+      if (finishedMatch && finishedMatch.round !== 'Группы' && finishedMatch.round !== 'Финал') { await checkAndAdvancePlayoffs(finishedMatch.round); }
       await loadTournament();
     }
     
@@ -697,19 +537,16 @@
     window.startPlayoffs = function() {
       const gMatch = allMatches.filter(m => m.round === 'Группы');
       if (gMatch.length > 0) { const unfin = gMatch.filter(m => !m.is_completed); if (unfin.length > 0) { return Telegram.WebApp.showAlert(`Внимание! Осталось ${unfin.length} незавершенных матчей в группах. Сначала доиграйте их!`); } }
-      
       Telegram.WebApp.showConfirm('Создать плей-офф? 1-е место группы сыграет со 2-м местом соседней группы!', async function(confirmed) {
         if (!confirmed) return;
         allUsers.sort((a, b) => { let pA = (a.wins||0)*3; let pB = (b.wins||0)*3; if (pA !== pB) return pB - pA; return ((b.goals_for||0)-(b.goals_against||0)) - ((a.goals_for||0)-(a.goals_against||0)); });
         const gUsers = {}; allUsers.forEach(u => { const g = u.group_name; if (g && g !== 'Без группы') { if(!gUsers[g]) gUsers[g] = []; gUsers[g].push(u); } });
         const vGroups = Object.keys(gUsers).sort(); const gC = vGroups.length; if (gC === 0) return Telegram.WebApp.showAlert('Группы не найдены!');
         let rName = gC === 16 ? '1/16 финала' : (gC === 8 ? '1/8 финала' : (gC === 4 ? '1/4 финала' : 'Полуфинал'));
-        
         let promises = [];
         for (let i = 0; i < gC; i += 2) {
           let g1 = vGroups[i]; let g2 = vGroups[i+1]; if (!g1 || !g2) continue;
           let p1g1 = gUsers[g1][0]; let p2g1 = gUsers[g1][1]; let p1g2 = gUsers[g2][0]; let p2g2 = gUsers[g2][1]; 
-          
           if (p1g1 && p2g2) { promises.push(fetch(`${SUPABASE_URL}/rest/v1/matches`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ player1: p1g1.username, player2: p2g2.username, score1: 0, score2: 0, round: rName, is_completed: false }) })); sendNotification(p1g1.username, `🔥 Ты в плей-офф! Соперник: ${p2g2.username}`); sendNotification(p2g2.username, `🔥 Ты в плей-офф! Соперник: ${p1g1.username}`); }
           if (p1g2 && p2g1) { promises.push(fetch(`${SUPABASE_URL}/rest/v1/matches`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ player1: p1g2.username, player2: p2g1.username, score1: 0, score2: 0, round: rName, is_completed: false }) })); sendNotification(p1g2.username, `🔥 Ты в плей-офф! Соперник: ${p2g1.username}`); sendNotification(p2g1.username, `🔥 Ты в плей-офф! Соперник: ${p1g2.username}`); }
         }
@@ -721,7 +558,6 @@
       Telegram.WebApp.showConfirm("⚠️ Вы уверены? Текущая таблица обнулится, а данные уйдут в Архив!", async function(confirmed) {
         if (!confirmed) return;
         let tName = prompt("Название турнира (напр. 'Летний Кубок'):"); if (!tName) return;
-        
         for (let u of allUsers) {
           if ((u.wins>0 || u.losses>0 || u.goals_for>0 || u.goals_against>0) || u.current_squad_url) { await fetch(`${SUPABASE_URL}/rest/v1/player_history`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ user_id: u.id, tournament_name: tName, wins: u.wins, losses: u.losses, goals_for: u.goals_for, goals_against: u.goals_against, squad_url: u.current_squad_url }) }); }
           await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${u.id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: 0, losses: 0, goals_for: 0, goals_against: 0, group_name: 'Без группы', can_update_squad: true, current_squad_url: null }) });
@@ -736,9 +572,7 @@
         if (!confirmed1) return;
         Telegram.WebApp.showConfirm("🚨 ТОЧНО УДАЛИТЬ? Действие необратимо!", async function(confirmed2) {
           if (!confirmed2) return;
-          for (let u of allUsers) {
-            await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${u.id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: 0, losses: 0, goals_for: 0, goals_against: 0, group_name: 'Без группы', can_update_squad: true, current_squad_url: null }) });
-          }
+          for (let u of allUsers) { await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${u.id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: 0, losses: 0, goals_for: 0, goals_against: 0, group_name: 'Без группы', can_update_squad: true, current_squad_url: null }) }); }
           for (let m of allMatches) { await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${m.id}`, { method: 'DELETE', headers: baseHeaders }); }
           Telegram.WebApp.showAlert("🗑️ Турнир полностью удален."); window.switchTab('matches'); await loadTournament();
         });
@@ -748,13 +582,31 @@
     async function loadTournament() {
       let res = await fetch(`${SUPABASE_URL}/rest/v1/users?select=*`, { headers: baseHeaders }); allUsers = await res.json();
       let me = allUsers.find(u => u.id === telegramId);
-      if (!me || !me.platform || me.platform === 'Неизвестно') { document.getElementById('registration-screen').classList.remove('hidden'); document.getElementById('registration-screen').classList.add('flex'); document.getElementById('main-app').classList.add('hidden'); return; }
+      
+      // ПРОВЕРКА НА БАН
+      if (me && me.is_banned) {
+        document.getElementById('ban-screen').classList.remove('hidden'); document.getElementById('ban-screen').classList.add('flex');
+        document.getElementById('registration-screen').classList.add('hidden'); document.getElementById('main-app').classList.add('hidden');
+        return;
+      }
+
+      if (!me || !me.platform || me.platform === 'Неизвестно') { 
+          document.getElementById('registration-screen').classList.remove('hidden'); document.getElementById('registration-screen').classList.add('flex'); document.getElementById('main-app').classList.add('hidden'); return; 
+      }
       document.getElementById('registration-screen').classList.add('hidden'); document.getElementById('registration-screen').classList.remove('flex'); document.getElementById('main-app').classList.remove('hidden');
       document.getElementById('profile-nickname').value = me.username || ''; document.getElementById('profile-platform').value = me.platform;
 
       try { let hRes = await fetch(`${SUPABASE_URL}/rest/v1/player_history?user_id=eq.${telegramId}&order=created_at.desc`, { headers: baseHeaders }); let h = await hRes.json(); document.getElementById('profile-content').innerHTML = generateProfileHtml(me, h); } catch (e) {}
       
-      allUsers.sort((a, b) => { let pA = (a.wins||0)*3; let pB = (b.wins||0)*3; if (pA !== pB) return pB - pA; return ((b.goals_for||0)-(b.goals_against||0)) - ((a.goals_for||0)-(a.goals_against||0)); });
+      allUsers.sort((a, b) => { 
+          let pA = (a.wins||0)*3; let pB = (b.wins||0)*3; 
+          if (pA !== pB) return pB - pA; 
+          let diffA = (a.goals_for||0) - (a.goals_against||0);
+          let diffB = (b.goals_for||0) - (b.goals_against||0);
+          if (diffA !== diffB) return diffB - diffA;
+          return (b.goals_for||0) - (a.goals_for||0); 
+      });
+      
       const gUsers = {}; allUsers.forEach(u => { const g = u.group_name || 'Без группы'; if(!gUsers[g]) gUsers[g] = []; gUsers[g].push(u); });
 
       let pHtml = '';
@@ -762,7 +614,9 @@
         pHtml += `<h3 class="text-blue-400 font-bold mt-6 mb-3 px-2 border-b border-blue-900/50 pb-1">🏆 ${gName}</h3>`;
         pHtml += pInG.map((u, i) => {
           const isMe = u.id === telegramId; const m = i===0 ? '1️⃣' : i===1 ? '2️⃣' : i===2 ? '3️⃣' : '⚽'; const pI = u.platform === 'PlayStation' ? '🎮 PS' : (u.platform === 'Xbox' ? '❎ Xbox' : '💻 PC');
-          return `<div onclick="openPlayerProfile(${u.id})" class="cursor-pointer p-4 rounded-xl border shadow-sm mb-3 transition hover:bg-slate-700/80 ${isMe ? 'border-blue-500/50 bg-blue-900/20' : 'border-slate-700/50 bg-slate-800'} relative"><div class="flex items-center justify-between mb-3"><div class="flex items-center overflow-hidden"><div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 text-blue-400 text-sm flex-shrink-0">${m}</div><div class="flex flex-col text-left truncate"><span class="font-bold text-slate-200 text-sm leading-tight truncate">${u.username || 'Аноним'}</span><span class="text-[10px] text-slate-400 mt-0.5 truncate">${pI}</span></div></div>${(isAdminMode) ? `<div class="flex space-x-2 pl-2 relative z-10"><button onclick="event.stopPropagation(); fetch('${SUPABASE_URL}/rest/v1/users?id=eq.${u.id}', {method: 'PATCH', headers: baseHeaders, body: JSON.stringify({group_name: prompt('Группа:', 'Группа A')})}).then(loadTournament);" class="text-blue-400/70 hover:text-blue-400 px-2 py-1 bg-slate-900 rounded text-[10px] uppercase font-bold transition">⚙️</button><button onclick="event.stopPropagation(); Telegram.WebApp.showConfirm('Удалить?', function(c) { if(c) fetch('${SUPABASE_URL}/rest/v1/users?id=eq.${u.id}', {method: 'DELETE', headers: baseHeaders}).then(loadTournament); });" class="text-red-400/50 hover:text-red-400 px-2 py-1 rounded text-xs transition">✕</button></div>` : '<div class="text-slate-500 text-xs opacity-50">👁️</div>'}</div><div class="grid grid-cols-3 gap-2 text-center text-xs bg-slate-900/50 p-2 rounded-lg text-slate-400 pointer-events-none"><div>Поб: <span class="text-white font-bold">${u.wins || 0} / ${u.losses || 0}</span></div><div>Голы: <span class="text-white font-bold">${u.goals_for || 0} : ${u.goals_against || 0}</span></div><div>Очки: <span class="text-blue-400 font-bold">${(u.wins || 0) * 3}</span></div></div></div>`;
+          let diff = (u.goals_for || 0) - (u.goals_against || 0); let diffStr = diff > 0 ? `+${diff}` : diff; let diffColor = diff > 0 ? 'text-green-400' : (diff < 0 ? 'text-red-400' : 'text-slate-300');
+          let adminTools = isAdminMode ? `<div class="flex space-x-2 pl-2 relative z-10"><button onclick="event.stopPropagation(); fetch('${SUPABASE_URL}/rest/v1/users?id=eq.${u.id}', {method: 'PATCH', headers: baseHeaders, body: JSON.stringify({group_name: prompt('Группа:', 'Группа A')})}).then(loadTournament);" class="text-blue-400/70 hover:text-blue-400 px-2 py-1 bg-slate-900 rounded text-[10px] uppercase font-bold transition">⚙️</button><button onclick="event.stopPropagation(); Telegram.WebApp.showConfirm('Удалить?', function(c) { if(c) fetch('${SUPABASE_URL}/rest/v1/users?id=eq.${u.id}', {method: 'DELETE', headers: baseHeaders}).then(loadTournament); });" class="text-red-400/50 hover:text-red-400 px-2 py-1 rounded text-xs transition">✕</button></div>` : '<div class="text-slate-500 text-xs opacity-50">👁️</div>';
+          return `<div onclick="openPlayerProfile(${u.id})" class="cursor-pointer p-4 rounded-xl border shadow-sm mb-3 transition hover:bg-slate-700/80 ${isMe ? 'border-blue-500/50 bg-blue-900/20' : (u.is_banned ? 'border-red-500/50 bg-red-900/20 opacity-50' : 'border-slate-700/50 bg-slate-800')} relative"><div class="flex items-center justify-between mb-3"><div class="flex items-center overflow-hidden"><div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 text-blue-400 text-sm flex-shrink-0">${m}</div><div class="flex flex-col text-left truncate"><span class="font-bold text-slate-200 text-sm leading-tight truncate">${u.username || 'Аноним'} ${u.is_banned ? '(Бан)' : ''}</span><span class="text-[10px] text-slate-400 mt-0.5 truncate">${pI}</span></div></div>${adminTools}</div><div class="grid grid-cols-4 gap-2 text-center text-xs bg-slate-900/50 p-2 rounded-lg text-slate-400 pointer-events-none"><div>Поб: <span class="text-white font-bold">${u.wins || 0}/${u.losses || 0}</span></div><div>Мячи: <span class="text-white font-bold">${u.goals_for || 0}:${u.goals_against || 0}</span></div><div>+/-: <span class="${diffColor} font-bold">${diffStr}</span></div><div>Очки: <span class="text-blue-400 font-bold">${(u.wins || 0) * 3}</span></div></div></div>`;
         }).join('');
       }
       document.getElementById('db-players').innerHTML = pHtml;
@@ -779,9 +633,7 @@
       document.getElementById('btn-1-8').classList.toggle('hidden', !s8);
       document.getElementById('btn-1-4').classList.toggle('hidden', !s4);
 
-      renderBracket();
-      renderMatches();
-      // Обновляем список бомбардиров, если мы на их вкладке
+      renderBracket(); renderMatches();
       if (!document.getElementById('bracket-scorers-container').classList.contains('hidden')) renderScorers();
     }
     
