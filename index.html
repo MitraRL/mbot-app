@@ -3,63 +3,108 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Турнирная сетка</title>
+  <title>Турнирный Хаб</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
-<body class="bg-slate-900 text-white p-4 font-sans antialiased min-h-screen">
-  <div class="max-w-md mx-auto">
+<body class="bg-slate-900 text-white font-sans antialiased min-h-screen">
+  
+  <!-- ОСНОВНОЙ КОНТЕЙНЕР (с отступом снизу под меню) -->
+  <div class="max-w-md mx-auto p-4 pb-24">
     
-    <h1 class="text-2xl font-bold text-center mt-2 mb-6 text-slate-100">Сетка турнира</h1>
-    
-    <!-- Скрытая панель администратора -->
-    <div id="admin-panel" class="hidden bg-slate-800/80 border border-blue-500/40 rounded-2xl p-4 mb-6 shadow-lg">
-      <h2 class="text-sm font-bold text-blue-400 mb-3">👑 Панель организатора</h2>
-      <div class="space-y-3">
-        <div class="grid grid-cols-2 gap-2">
-          <input id="new-p1" type="text" placeholder="Игрок 1" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
-          <input id="new-p2" type="text" placeholder="Игрок 2" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+    <h1 class="text-xl font-bold text-center mt-2 mb-6 text-slate-100 uppercase tracking-wider" id="page-title">Сетка турнира</h1>
+
+    <!-- ================= ВКЛАДКА 1: МАТЧИ ================= -->
+    <div id="tab-matches" class="tab-content block">
+      <div class="flex overflow-x-auto space-x-2 pb-2 mb-4" id="round-buttons">
+        <button onclick="setRound('1/8 финала')" id="btn-1-8" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-blue-500 text-white transition whitespace-nowrap">1/8 финала</button>
+        <button onclick="setRound('1/4 финала')" id="btn-1-4" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap">1/4 финала</button>
+        <button onclick="setRound('Полуфинал')" id="btn-semi" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap">Полуфинал</button>
+        <button onclick="setRound('Финал')" id="btn-final" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap">Финал</button>
+      </div>
+      <div id="db-matches" class="space-y-4">
+        <div class="text-center py-4 text-slate-500 text-sm animate-pulse">Загрузка матчей...</div>
+      </div>
+    </div>
+
+    <!-- ================= ВКЛАДКА 2: РЕЙТИНГ ================= -->
+    <div id="tab-table" class="tab-content hidden">
+      <div id="db-players" class="space-y-3 text-slate-300">
+        <div class="text-center py-4 animate-pulse">Загрузка рейтинга...</div>
+      </div>
+    </div>
+
+    <!-- ================= ВКЛАДКА 3: НАСТРОЙКИ И АДМИНКА ================= -->
+    <div id="tab-profile" class="tab-content hidden space-y-6">
+      
+      <!-- Профиль игрока -->
+      <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700/50 shadow-sm">
+        <h2 class="text-sm font-bold text-slate-200 mb-4">Твой профиль</h2>
+        <p class="text-xs text-slate-400 mb-2">Отображаемое имя в таблице:</p>
+        <div class="flex space-x-2">
+          <input id="nickname-input" type="text" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm">
+          <button onclick="saveNickname()" id="save-btn" class="bg-blue-600 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-blue-500 transition">Сохранить</button>
         </div>
-        <select id="new-round" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
-          <option value="1/8 финала">1/8 финала</option>
-          <option value="1/4 финала">1/4 финала</option>
-          <option value="Полуфинал">Полуфинал</option>
-          <option value="Финал">Финал</option>
-        </select>
-        <button onclick="createMatch()" class="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded-xl text-xs font-semibold">+ Создать матч</button>
+      </div>
+
+      <!-- Скрытая панель администратора -->
+      <div id="admin-panel" class="hidden bg-slate-800/80 border border-blue-500/40 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-purple-600"></div>
+        <h2 class="text-sm font-bold text-blue-400 mb-4 flex items-center">
+          👑 Панель организатора
+        </h2>
+        <div class="space-y-3">
+          <div class="grid grid-cols-2 gap-2">
+            <input id="new-p1" type="text" placeholder="Игрок 1" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+            <input id="new-p2" type="text" placeholder="Игрок 2" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+          </div>
+          <select id="new-round" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+            <option value="1/8 финала">1/8 финала</option>
+            <option value="1/4 финала">1/4 финала</option>
+            <option value="Полуфинал">Полуфинал</option>
+            <option value="Финал">Финал</option>
+          </select>
+          <button onclick="createMatch()" class="w-full bg-blue-600 hover:bg-blue-500 py-2.5 rounded-xl text-xs font-bold text-white transition uppercase tracking-wide">
+            + Создать матч
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- Настройки профиля -->
-    <div class="bg-slate-800 rounded-2xl p-4 mb-6 border border-slate-700/50 shadow-sm">
-      <p class="text-sm text-slate-400 mb-2">Твое имя в таблице:</p>
-      <div class="flex space-x-2">
-        <input id="nickname-input" type="text" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm">
-        <button onclick="saveNickname()" id="save-btn" class="bg-blue-600 px-4 py-2 rounded-xl text-sm font-semibold">Сохранить</button>
-      </div>
-    </div>
-    
-    <!-- Вкладки раундов -->
-    <div class="flex overflow-x-auto space-x-2 pb-2 mb-6" id="round-buttons">
-      <button onclick="setRound('1/8 финала')" id="btn-1-8" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-blue-500 text-white transition">1/8 финала</button>
-      <button onclick="setRound('1/4 финала')" id="btn-1-4" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition">1/4 финала</button>
-      <button onclick="setRound('Полуфинал')" id="btn-semi" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition">Полуфинал</button>
-      <button onclick="setRound('Финал')" id="btn-final" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition">Финал</button>
-    </div>
-
-    <!-- Матчи -->
-    <div id="db-matches" class="space-y-4 mb-8"></div>
-    
-    <!-- Участники и статистика -->
-    <h2 class="text-lg font-bold mb-4 text-slate-200">🏆 Участники и статистика:</h2>
-    <div id="db-players" class="space-y-3 text-slate-300"></div>
-    
   </div>
+
+  <!-- НИЖНЕЕ НАВИГАЦИОННОЕ МЕНЮ -->
+  <div class="fixed bottom-0 left-0 w-full bg-slate-900/95 backdrop-blur-md border-t border-slate-800 z-50">
+    <div class="max-w-md mx-auto flex justify-around p-2 pb-safe">
+      
+      <button onclick="switchTab('matches')" id="nav-matches" class="nav-btn flex flex-col items-center p-2 text-blue-500 transition w-1/3">
+        <span class="text-2xl mb-1">⚽</span>
+        <span class="text-[10px] font-medium">Матчи</span>
+      </button>
+      
+      <button onclick="switchTab('table')" id="nav-table" class="nav-btn flex flex-col items-center p-2 text-slate-500 transition w-1/3">
+        <span class="text-2xl mb-1">🏆</span>
+        <span class="text-[10px] font-medium">Рейтинг</span>
+      </button>
+      
+      <button onclick="switchTab('profile')" id="nav-profile" class="nav-btn flex flex-col items-center p-2 text-slate-500 transition w-1/3">
+        <span class="text-2xl mb-1">⚙️</span>
+        <span class="text-[10px] font-medium">Настройки</span>
+      </button>
+
+    </div>
+  </div>
+
+  <style>
+    /* Отступ для айфонов с "челкой" внизу */
+    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0.5rem); }
+  </style>
 
   <script>
     // --- ИНИЦИАЛИЗАЦИЯ TELEGRAM ---
     window.Telegram.WebApp.ready();
     window.Telegram.WebApp.expand();
+    window.Telegram.WebApp.setHeaderColor('#0f172a'); // Цвет шапки под дизайн
     
     const tgUser = window.Telegram.WebApp.initDataUnsafe?.user;
     const tgUsername = (tgUser && tgUser.username) ? tgUser.username : 'Гость';
@@ -67,30 +112,51 @@
     
     const ADMIN_ID = 438290253;
     
-    // --- НАСТРОЙКИ SUPABASE ---
     const SUPABASE_URL = 'https://kvsrxuibrovumaikqptk.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2c3J4dWlicm92dW1haWtxcHRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4Nzc0NTYsImV4cCI6MjEwMDQ1MzQ1Nn0.uKkIbZi7I0Q0jL0oMMq5k4ABQ_ge18yJo7tYSB_PYRI';
-    
-    const baseHeaders = { 
-      'apikey': SUPABASE_KEY, 
-      'Authorization': `Bearer ${SUPABASE_KEY}`, 
-      'Content-Type': 'application/json' 
-    };
+    const baseHeaders = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' };
 
     let allMatches = [];
     let allUsers = [];
     let currentRound = '1/8 финала';
-    let editModeMatchId = null; // Переменная для отслеживания редактируемого матча
+    let editModeMatchId = null; 
 
     if (telegramId === ADMIN_ID) {
       document.getElementById('admin-panel').classList.remove('hidden');
+    }
+
+    // --- НАВИГАЦИЯ ПО ВКЛАДКАМ ---
+    window.switchTab = function(tabName) {
+      // Прячем все вкладки
+      document.querySelectorAll('.tab-content').forEach(el => {
+        el.classList.remove('block');
+        el.classList.add('hidden');
+      });
+      // Показываем нужную
+      document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+      document.getElementById(`tab-${tabName}`).classList.add('block');
+
+      // Сбрасываем цвета кнопок в меню
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('text-blue-500');
+        btn.classList.add('text-slate-500');
+      });
+      // Красим активную кнопку
+      document.getElementById(`nav-${tabName}`).classList.remove('text-slate-500');
+      document.getElementById(`nav-${tabName}`).classList.add('text-blue-500');
+
+      // Меняем заголовок страницы
+      const titleEl = document.getElementById('page-title');
+      if (tabName === 'matches') titleEl.innerText = 'Сетка турнира';
+      if (tabName === 'table') titleEl.innerText = 'Турнирный рейтинг';
+      if (tabName === 'profile') titleEl.innerText = 'Настройки';
     }
 
     // --- ПЕРЕКЛЮЧЕНИЕ РАУНДОВ ---
     window.setRound = function(roundName) {
       currentRound = roundName;
       const buttons = document.querySelectorAll('#round-buttons button');
-      buttons.forEach(btn => btn.className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition');
+      buttons.forEach(btn => btn.className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap');
       
       let actId = '';
       if (roundName === '1/8 финала') actId = 'btn-1-8';
@@ -98,12 +164,13 @@
       else if (roundName === 'Полуфинал') actId = 'btn-semi';
       else if (roundName === 'Финал') actId = 'btn-final';
       
-      document.getElementById(actId).className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-blue-500 text-white transition';
-      editModeMatchId = null; // Сбрасываем режим редактирования при смене вкладки
+      document.getElementById(actId).className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-blue-500 text-white transition whitespace-nowrap';
+      editModeMatchId = null;
       renderMatches();
     }
 
-    // --- ОТПРАВКА УВЕДОМЛЕНИЙ ---
+    // --- ОСТАЛЬНАЯ ЛОГИКА (БЕЗ ИЗМЕНЕНИЙ) ---
+
     async function sendNotification(username, text) {
       let user = allUsers.find(u => u.username === username);
       if (user && user.id) {
@@ -111,11 +178,10 @@
           await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
             method: 'POST', headers: baseHeaders, body: JSON.stringify({ telegram_id: user.id, message: text })
           });
-        } catch(e) { console.error(e); }
+        } catch(e) {}
       }
     }
 
-    // --- ОТРИСОВКА МАТЧЕЙ ---
     function renderMatches() {
       const container = document.getElementById('db-matches');
       const filteredMatches = allMatches.filter(m => m.round === currentRound);
@@ -123,8 +189,6 @@
 
       if (filteredMatches.length > 0) {
         container.innerHTML = filteredMatches.map(m => {
-          
-          // РЕЖИМ РЕДАКТИРОВАНИЯ
           if (editModeMatchId === m.id) {
             return `
             <div class="bg-slate-800 rounded-2xl p-5 border border-yellow-500/50 shadow-sm">
@@ -148,7 +212,6 @@
             </div>`;
           }
 
-          // ОБЫЧНЫЙ РЕЖИМ ОТРИСОВКИ
           return `
           <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700/50 shadow-sm ${m.is_completed ? 'opacity-80' : ''}">
             <div class="flex justify-between items-center mb-2">
@@ -170,7 +233,7 @@
             ${isAdmin ? (m.is_completed ? `
               <div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-2">
                 <div class="text-center text-xs text-green-400 font-semibold">✅ Матч завершен</div>
-                <button onclick="rollbackMatch(${m.id}, '${m.player1}', '${m.player2}', ${m.score1}, ${m.score2})" class="bg-yellow-600/30 hover:bg-yellow-600/50 text-yellow-300 py-1.5 rounded-lg text-xs font-semibold">⏪ Отменить завершение (вернуть стату)</button>
+                <button onclick="rollbackMatch(${m.id}, '${m.player1}', '${m.player2}', ${m.score1}, ${m.score2})" class="bg-yellow-600/30 hover:bg-yellow-600/50 text-yellow-300 py-1.5 rounded-lg text-xs font-semibold">⏪ Отменить завершение</button>
               </div>
             ` : `
               <div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-2">
@@ -185,94 +248,62 @@
           </div>
         `}).join('');
       } else {
-        container.innerHTML = `<div class="text-center text-slate-500 text-sm bg-slate-800/50 p-4 rounded-xl border border-slate-700/30">Матчей пока нет.</div>`;
+        container.innerHTML = `<div class="text-center text-slate-500 text-sm bg-slate-800/50 p-4 rounded-xl border border-slate-700/30 flex flex-col items-center">
+          <span class="text-2xl mb-2">🤷‍♂️</span>
+          <span>Матчей пока нет.</span>
+        </div>`;
       }
     }
 
-    // --- НОВЫЕ ФУНКЦИИ УПРАВЛЕНИЯ МАТЧАМИ ---
-
-    // Включить режим редактирования
-    window.editMatchMode = function(matchId) {
-      editModeMatchId = matchId;
-      renderMatches();
-    }
-
-    // Отмена редактирования
-    window.cancelEdit = function() {
-      editModeMatchId = null;
-      renderMatches();
-    }
-
-    // Сохранение изменений матча
+    window.editMatchMode = function(matchId) { editModeMatchId = matchId; renderMatches(); }
+    window.cancelEdit = function() { editModeMatchId = null; renderMatches(); }
+    
     window.saveMatchEdit = async function(matchId) {
       const p1 = document.getElementById(`edit-p1-${matchId}`).value.trim();
       const p2 = document.getElementById(`edit-p2-${matchId}`).value.trim();
       const round = document.getElementById(`edit-round-${matchId}`).value;
+      if (!p1 || !p2) return;
       
-      if (!p1 || !p2) { alert('Имена не могут быть пустыми'); return; }
-      
-      try {
-        await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, {
-          method: 'PATCH', headers: baseHeaders,
-          body: JSON.stringify({ player1: p1, player2: p2, round: round })
-        });
-        editModeMatchId = null;
-        await loadTournament();
-      } catch (err) { alert('Ошибка сохранения: ' + err.message); }
+      await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, {
+        method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ player1: p1, player2: p2, round: round })
+      });
+      editModeMatchId = null;
+      await loadTournament();
     }
 
-    // Удаление матча
     window.deleteMatch = async function(matchId) {
-      if (!confirm('Точно удалить этот матч навсегда?')) return;
-      try {
-        await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'DELETE', headers: baseHeaders });
-        await loadTournament();
-      } catch (err) { alert('Ошибка удаления: ' + err.message); }
+      if (!confirm('Точно удалить этот матч?')) return;
+      await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'DELETE', headers: baseHeaders });
+      await loadTournament();
     }
 
-    // Откат завершения (вычитание статистики)
     window.rollbackMatch = async function(matchId, p1Name, p2Name, s1, s2) {
-      if (!confirm('Отменить завершение матча? Очки и голы будут вычтены из статистики игроков.')) return;
-      
+      if (!confirm('Отменить завершение матча? Очки и голы будут вычтены из статистики.')) return;
       let p1 = allUsers.find(u => u.username === p1Name);
       let p2 = allUsers.find(u => u.username === p2Name);
 
       if (p1) {
         let wins = p1.wins || 0; let losses = p1.losses || 0;
-        if (s1 > s2 && wins > 0) wins--; 
-        if (s1 < s2 && losses > 0) losses--;
+        if (s1 > s2 && wins > 0) wins--; if (s1 < s2 && losses > 0) losses--;
         await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p1.id}`, {
           method: 'PATCH', headers: baseHeaders,
-          body: JSON.stringify({ 
-            wins: wins, losses: losses, 
-            goals_for: Math.max(0, (p1.goals_for || 0) - s1), 
-            goals_against: Math.max(0, (p1.goals_against || 0) - s2) 
-          })
+          body: JSON.stringify({ wins: wins, losses: losses, goals_for: Math.max(0, (p1.goals_for || 0) - s1), goals_against: Math.max(0, (p1.goals_against || 0) - s2) })
         });
       }
       
       if (p2) {
         let wins = p2.wins || 0; let losses = p2.losses || 0;
-        if (s2 > s1 && wins > 0) wins--; 
-        if (s2 < s1 && losses > 0) losses--;
+        if (s2 > s1 && wins > 0) wins--; if (s2 < s1 && losses > 0) losses--;
         await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p2.id}`, {
           method: 'PATCH', headers: baseHeaders,
-          body: JSON.stringify({ 
-            wins: wins, losses: losses, 
-            goals_for: Math.max(0, (p2.goals_for || 0) - s2), 
-            goals_against: Math.max(0, (p2.goals_against || 0) - s1) 
-          })
+          body: JSON.stringify({ wins: wins, losses: losses, goals_for: Math.max(0, (p2.goals_for || 0) - s2), goals_against: Math.max(0, (p2.goals_against || 0) - s1) })
         });
       }
-
       await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, {
           method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ is_completed: false })
       });
       await loadTournament();
     }
-
-
-    // --- СТАРЫЕ ФУНКЦИИ (СОЗДАНИЕ, СЧЕТ, ЗАВЕРШЕНИЕ) ---
 
     window.createMatch = async function() {
       const p1 = document.getElementById('new-p1').value.trim();
@@ -283,9 +314,10 @@
         method: 'POST', headers: baseHeaders,
         body: JSON.stringify({ player1: p1, player2: p2, score1: 0, score2: 0, round: round, is_completed: false })
       });
-      let msg = `🔥 Для тебя назначен новый матч!\nСтадия: ${round}\nСоперник: ${p1} vs ${p2}`;
-      await sendNotification(p1, msg); await sendNotification(p2, msg);
+      await sendNotification(p1, `🔥 Для тебя назначен новый матч!\nСтадия: ${round}\nСоперник: ${p1} vs ${p2}`); 
+      await sendNotification(p2, `🔥 Для тебя назначен новый матч!\nСтадия: ${round}\nСоперник: ${p1} vs ${p2}`);
       document.getElementById('new-p1').value = ''; document.getElementById('new-p2').value = '';
+      window.switchTab('matches'); // Перекидываем на сетку
       await loadTournament();
     }
 
@@ -339,6 +371,7 @@
       let res = await fetch(`${SUPABASE_URL}/rest/v1/users?select=*`, { headers: baseHeaders });
       allUsers = await res.json();
       let me = allUsers.find(u => u.id === telegramId);
+      
       if (!me) {
         await fetch(`${SUPABASE_URL}/rest/v1/users`, {
           method: 'POST', headers: { ...baseHeaders, 'Prefer': 'resolution=merge-duplicates' },
@@ -376,10 +409,7 @@
 
       let matchesRes = await fetch(`${SUPABASE_URL}/rest/v1/matches?select=*`, { headers: baseHeaders });
       allMatches = await matchesRes.json();
-      
-      // Сортируем матчи, чтобы завершенные были внизу
       allMatches.sort((a, b) => (a.is_completed === b.is_completed) ? 0 : a.is_completed ? 1 : -1);
-      
       renderMatches();
     }
 
@@ -391,6 +421,7 @@
       });
       await loadTournament();
     }
+    
     loadTournament();
   </script>
 </body>
