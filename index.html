@@ -12,7 +12,6 @@
     
     <h1 class="text-2xl font-bold text-center mt-2 mb-6 text-slate-100">Сетка турнира</h1>
     
-    <!-- Настройки профиля: Смена никнейма -->
     <div class="bg-slate-800 rounded-2xl p-4 mb-6 border border-slate-700/50 shadow-sm">
       <p class="text-sm text-slate-400 mb-2">Твое имя в таблице:</p>
       <div class="flex space-x-2">
@@ -22,18 +21,16 @@
       <p id="save-msg" class="text-xs text-green-400 mt-2 hidden">Ник успешно обновлен!</p>
     </div>
     
-    <div class="flex overflow-x-auto space-x-2 pb-2 mb-6">
-      <button class="px-5 py-2.5 rounded-full text-sm font-semibold bg-blue-500 text-white">1/8 финала</button>
-      <button class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400">1/4 финала</button>
+    <!-- Интерактивные кнопки стадий турнира -->
+    <div class="flex overflow-x-auto space-x-2 pb-2 mb-6" id="round-buttons">
+      <button onclick="setRound('1/8 финала')" id="btn-1-8" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-blue-500 text-white transition">1/8 финала</button>
+      <button onclick="setRound('1/4 финала')" id="btn-1-4" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition">1/4 финала</button>
+      <button onclick="setRound('Полуфинал')" id="btn-semi" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition">Полуфинал</button>
+      <button onclick="setRound('Финал')" id="btn-final" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition">Финал</button>
     </div>
 
-    <div class="space-y-4 mb-8">
-      <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700/50 shadow-sm opacity-50">
-        <div class="text-center text-xs text-slate-400 mb-2">Тестовый матч</div>
-        <div class="flex justify-between items-center font-bold text-slate-300">
-          <span>Игрок 1</span> <span>- : -</span> <span>Игрок 2</span>
-        </div>
-      </div>
+    <div id="db-matches" class="space-y-4 mb-8">
+      <div class="text-center py-4 text-slate-500 text-sm animate-pulse">Загрузка матчей...</div>
     </div>
 
     <h2 class="text-lg font-bold mb-4 text-slate-200">🏆 Участники турнира:</h2>
@@ -60,44 +57,88 @@
       'Content-Type': 'application/json'
     };
 
-    // Функция загрузки списка
+    // Глобальные переменные для фильтрации
+    let allMatches = [];
+    let currentRound = '1/8 финала';
+
+    // Функция переключения вкладок
+    window.setRound = function(roundName) {
+      currentRound = roundName;
+      
+      // Обновляем стили всех кнопок (сбрасываем в серый)
+      const buttons = document.querySelectorAll('#round-buttons button');
+      buttons.forEach(btn => {
+        btn.className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition';
+      });
+
+      // Находим нажатую кнопку и красим в синий
+      let activeBtnId = '';
+      if (roundName === '1/8 финала') activeBtnId = 'btn-1-8';
+      else if (roundName === '1/4 финала') activeBtnId = 'btn-1-4';
+      else if (roundName === 'Полуфинал') activeBtnId = 'btn-semi';
+      else if (roundName === 'Финал') activeBtnId = 'btn-final';
+      
+      if (activeBtnId) {
+        document.getElementById(activeBtnId).className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-blue-500 text-white transition';
+      }
+
+      // Перерисовываем матчи
+      renderMatches();
+    }
+
+    // Функция отрисовки матчей в зависимости от выбранной вкладки
+    function renderMatches() {
+      const container = document.getElementById('db-matches');
+      
+      // Фильтруем матчи по выбранному раунду
+      const filteredMatches = allMatches.filter(m => m.round === currentRound);
+
+      if (filteredMatches.length > 0) {
+        container.innerHTML = filteredMatches.map(m => `
+          <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700/50 shadow-sm">
+            <div class="text-center text-xs text-slate-400 mb-2">${m.round}</div>
+            <div class="flex justify-between items-center font-bold text-slate-200">
+              <span class="w-2/5 text-right truncate pr-2">${m.player1 || 'Ожидание...'}</span> 
+              <span class="w-1/5 text-center text-blue-400 text-lg">${m.score1} : ${m.score2}</span> 
+              <span class="w-2/5 text-left truncate pl-2">${m.player2 || 'Ожидание...'}</span>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        container.innerHTML = `<div class="text-center text-slate-500 text-sm bg-slate-800/50 p-4 rounded-xl border border-slate-700/30">Матчи для стадии "${currentRound}" пока не назначены.</div>`;
+      }
+    }
+
     async function loadTournament() {
-      const container = document.getElementById('db-players');
+      const usersContainer = document.getElementById('db-players');
       
       try {
-        // 1. Получаем список всех игроков
+        // --- 1. ЗАГРУЗКА УЧАСТНИКОВ (без изменений) ---
         let response = await fetch(`${SUPABASE_URL}/rest/v1/users?select=*`, { method: 'GET', headers: baseHeaders });
-        if (!response.ok) throw new Error('Ошибка сервера при чтении');
+        if (!response.ok) throw new Error('Ошибка чтения пользователей');
         let users = await response.json();
         
-        // 2. Ищем себя в базе
         let me = users.find(u => u.id === telegramId);
         
-        // 3. Если нас нет, записываем в базу с телеграм-ником как дефолтным
         if (!me) {
           await fetch(`${SUPABASE_URL}/rest/v1/users`, {
             method: 'POST',
             headers: { ...baseHeaders, 'Prefer': 'resolution=merge-duplicates' },
             body: JSON.stringify({ id: telegramId, username: tgUsername })
           });
-          
-          // Перезапрашиваем список после добавления
           response = await fetch(`${SUPABASE_URL}/rest/v1/users?select=*`, { method: 'GET', headers: baseHeaders });
           users = await response.json();
           me = users.find(u => u.id === telegramId);
         }
 
-        // Подставляем текущее имя из базы в поле ввода (если оно еще не заполнено)
         if (me && !document.getElementById('nickname-input').value) {
           document.getElementById('nickname-input').value = me.username;
         }
 
-        // 4. Отрисовываем красивый список
         if (users && users.length > 0) {
-          container.innerHTML = users.map(user => {
+          usersContainer.innerHTML = users.map(user => {
             const isMe = user.id === telegramId;
             const displayName = user.username || 'Аноним';
-            // Если это я - подсвечиваем синим
             const highlightClass = isMe ? 'border-blue-500/50 bg-blue-900/20' : 'border-slate-700/50 bg-slate-800';
             
             return `
@@ -111,15 +152,27 @@
             `;
           }).join('');
         } else {
-          container.innerHTML = '<div class="text-slate-500 text-center py-4">Список пока пуст.</div>';
+          usersContainer.innerHTML = '<div class="text-slate-500 text-center py-4">Список пока пуст.</div>';
+        }
+
+        // --- 2. ЗАГРУЗКА И ФИЛЬТРАЦИЯ МАТЧЕЙ ---
+        try {
+          const matchesRes = await fetch(`${SUPABASE_URL}/rest/v1/matches?select=*`, { method: 'GET', headers: baseHeaders });
+          if (!matchesRes.ok) throw new Error('Таблица matches недоступна');
+          allMatches = await matchesRes.json();
+          
+          // Вызываем отрисовку для текущей вкладки
+          renderMatches();
+          
+        } catch (matchErr) {
+          document.getElementById('db-matches').innerHTML = '<div class="text-center text-yellow-500/80 text-xs py-4">Ошибка загрузки матчей.</div>';
         }
 
       } catch (err) {
-        container.innerHTML = `<div class="bg-red-900/50 p-3 rounded text-red-200 text-xs">Ошибка: ${err.message}</div>`;
+        usersContainer.innerHTML = `<div class="bg-red-900/50 p-3 rounded text-red-200 text-xs">Ошибка: ${err.message}</div>`;
       }
     }
 
-    // Функция смены никнейма (вызывается по кнопке)
     window.saveNickname = async function() {
       const newName = document.getElementById('nickname-input').value.trim();
       if (!newName) return;
@@ -129,7 +182,6 @@
       btn.disabled = true;
       
       try {
-        // Отправляем PATCH-запрос для обновления только нашего аккаунта
         const updateRes = await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${telegramId}`, {
           method: 'PATCH',
           headers: baseHeaders,
@@ -138,14 +190,11 @@
         
         if (!updateRes.ok) throw new Error('Не удалось обновить никнейм');
         
-        // Показываем сообщение об успехе
         const msg = document.getElementById('save-msg');
         msg.classList.remove('hidden');
         setTimeout(() => msg.classList.add('hidden'), 3000);
         
-        // Обновляем список, чтобы сразу увидеть себя с новым именем
         await loadTournament();
-        
       } catch (err) {
         alert(err.message);
       } finally {
@@ -154,7 +203,6 @@
       }
     }
 
-    // Запускаем при открытии
     loadTournament();
   </script>
 </body>
