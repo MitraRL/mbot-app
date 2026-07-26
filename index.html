@@ -184,8 +184,27 @@
       window.changeScore(matchId, 0, 0);
     }
 
+    // НОВАЯ ФУНКЦИЯ УДАЛЕНИЯ ИГРОКА
+    window.deletePlayer = async function(userId) {
+      if (!confirm('Точно хочешь удалить этого участника из турнира?')) return;
+      
+      try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${userId}`, {
+          method: 'DELETE',
+          headers: baseHeaders
+        });
+
+        if (!res.ok) throw new Error('Не удалось удалить игрока');
+        
+        await loadTournament();
+      } catch (err) {
+        alert('Ошибка при удалении: ' + err.message);
+      }
+    }
+
     async function loadTournament() {
       const usersContainer = document.getElementById('db-players');
+      const isAdmin = (telegramId === ADMIN_ID);
       
       try {
         let response = await fetch(`${SUPABASE_URL}/rest/v1/users?select=*`, { method: 'GET', headers: baseHeaders });
@@ -225,6 +244,8 @@
                       ${isMe ? '<span class="text-xs text-blue-400 ml-1 font-normal">(Ты)</span>' : ''}
                     </span>
                   </div>
+                  <!-- Кнопка удаления видна только админу -->
+                  ${isAdmin ? `<button onclick="deletePlayer(${user.id})" class="text-red-400/50 hover:text-red-400 hover:bg-red-900/30 px-2 py-1 rounded text-xs transition">✕ Удалить</button>` : ''}
                 </div>
                 <div class="grid grid-cols-3 gap-2 text-center text-xs bg-slate-900/50 p-2 rounded-lg text-slate-400">
                   <div>Поб/Пор: <span class="text-white font-bold">${user.wins || 0} / ${user.losses || 0}</span></div>
