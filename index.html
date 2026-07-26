@@ -58,8 +58,8 @@
           'Prefer': 'resolution=merge-duplicates'
         };
 
-        // 1. Принудительно отправляем себя в таблицу прямо со страницы
-        await fetch(`${SUPABASE_URL}/rest/v1/users`, {
+        // 1. Пробуем записать данные и ловим ответ от базы!
+        const postRes = await fetch(`${SUPABASE_URL}/rest/v1/users`, {
           method: 'POST',
           headers: headers,
           body: JSON.stringify({
@@ -68,13 +68,19 @@
           })
         });
 
-        // 2. Сразу запрашиваем список всех игроков заново
+        // Если база отказала, читаем текст ошибки и останавливаем скрипт
+        if (!postRes.ok) {
+          const errorText = await postRes.text();
+          throw new Error(`База отклонила запись! Причина: ${errorText}`);
+        }
+
+        // 2. Читаем список
         const response = await fetch(`${SUPABASE_URL}/rest/v1/users?select=*`, {
           method: 'GET',
           headers: headers
         });
 
-        if (!response.ok) throw new Error(`Ошибка сервера: ${response.status}`);
+        if (!response.ok) throw new Error(`Ошибка чтения: ${response.status}`);
 
         const data = await response.json();
         
@@ -93,7 +99,8 @@
         }
 
       } catch (err) {
-        container.innerHTML = `<div class="bg-red-900/50 p-3 rounded text-red-200 text-xs">Ошибка: ${err.message}</div>`;
+        // Теперь мы точно увидим красную ошибку, если что-то не так!
+        container.innerHTML = `<div class="bg-red-900/50 p-3 rounded text-red-200 text-xs break-words"><strong>Ахтунг:</strong><br>${err.message}</div>`;
       }
     }
 
