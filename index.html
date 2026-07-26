@@ -440,7 +440,7 @@
       const players = allUsers.filter(u => u.username !== 'Аноним');
       const n = players.length;
       if (n < 4) { alert('Для старта нужно минимум 4 участника!'); return; }
-      if (!confirm(`Система перемешает игроков заново. Продолжить?`)) return;
+      if (!confirm(`Система перемешает игроков заново и закроет прием составов. Продолжить?`)) return;
 
       let playoffSpots = 4;
       if (n >= 32) playoffSpots = 32;
@@ -453,16 +453,16 @@
       
       shuffled.forEach((user, index) => { newGroups[index % groupCount].push(user); });
 
-      alert('Распределяем по группам...');
+      alert('Распределяем по группам и фиксируем составы...');
       for (let i = 0; i < groupCount; i++) {
         let groupName = 'Группа ' + String.fromCharCode(65 + i);
         for (let user of newGroups[i]) {
           await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${user.id}`, {
-            method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ group_name: groupName })
+            method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ group_name: groupName, can_update_squad: false })
           });
         }
       }
-      alert(`Жеребьевка завершена!`);
+      alert(`Жеребьевка завершена! Составы зафиксированы.`);
       await loadTournament();
       window.switchTab('table');
     }
@@ -535,7 +535,6 @@
       allUsers = await res.json();
       let me = allUsers.find(u => u.id === telegramId);
       
-      // ЖЕСТКАЯ ПРОВЕРКА ОТ БОТА: Если игрока нет в базе или у него нет платформы
       if (!me || !me.platform || me.platform === 'Неизвестно') {
         document.getElementById('registration-screen').classList.remove('hidden');
         document.getElementById('registration-screen').classList.add('flex');
@@ -543,7 +542,6 @@
         return; 
       }
       
-      // Если всё отлично и платформа есть — пускаем внутрь
       document.getElementById('registration-screen').classList.add('hidden');
       document.getElementById('registration-screen').classList.remove('flex');
       document.getElementById('main-app').classList.remove('hidden');
@@ -551,7 +549,6 @@
       document.getElementById('profile-nickname').value = me.username || '';
       document.getElementById('profile-platform').value = me.platform;
       
-      // Сортировка и отрисовка рейтинга
       allUsers.sort((a, b) => {
         let ptsA = (a.wins || 0) * 3; let ptsB = (b.wins || 0) * 3;
         if (ptsA !== ptsB) return ptsB - ptsA;
