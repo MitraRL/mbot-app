@@ -29,7 +29,7 @@
 
     <h2 class="text-lg font-bold mb-4 text-slate-200">🏆 Участники турнира:</h2>
     <div id="db-players" class="space-y-2 text-slate-300">
-      <div class="text-center py-4 animate-pulse">Синхронизация с базой...</div>
+      <div class="text-center py-4 animate-pulse">Загрузка...</div>
     </div>
 
   </div>
@@ -58,20 +58,19 @@
           'Prefer': 'resolution=merge-duplicates'
         };
 
-        // 1. Пробуем записать данные и ловим ответ от базы!
+        // 1. Записываем с правильными названиями колонок: id и username
         const postRes = await fetch(`${SUPABASE_URL}/rest/v1/users`, {
           method: 'POST',
           headers: headers,
           body: JSON.stringify({
-            telegram_id: telegramId,
+            id: telegramId, 
             username: username
           })
         });
 
-        // Если база отказала, читаем текст ошибки и останавливаем скрипт
         if (!postRes.ok) {
           const errorText = await postRes.text();
-          throw new Error(`База отклонила запись! Причина: ${errorText}`);
+          throw new Error(`Ошибка записи: ${errorText}`);
         }
 
         // 2. Читаем список
@@ -86,21 +85,19 @@
         
         if (data && data.length > 0) {
           container.innerHTML = data.map(user => {
-            const name = user.username || user.name || user.login || 'Участник';
             return `
               <div class="bg-slate-800 p-4 rounded-xl border border-slate-700/50 shadow-sm flex items-center">
                 <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 text-blue-400">⚽</div>
-                <span class="font-semibold text-slate-200">@${name}</span>
+                <span class="font-semibold text-slate-200">@${user.username}</span>
               </div>
             `;
           }).join('');
         } else {
-          container.innerHTML = '<div class="text-red-400 text-center py-4">Список пуст.</div>';
+          container.innerHTML = '<div class="text-slate-500 text-center py-4">Список пока пуст.</div>';
         }
 
       } catch (err) {
-        // Теперь мы точно увидим красную ошибку, если что-то не так!
-        container.innerHTML = `<div class="bg-red-900/50 p-3 rounded text-red-200 text-xs break-words"><strong>Ахтунг:</strong><br>${err.message}</div>`;
+        container.innerHTML = `<div class="bg-red-900/50 p-3 rounded text-red-200 text-xs"><strong>Ошибка:</strong><br>${err.message}</div>`;
       }
     }
 
