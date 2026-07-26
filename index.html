@@ -71,7 +71,12 @@
             <button onclick="autoDrawGroups()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">🎲</span> Сформировать группы</button>
             <button onclick="generateGroupMatches()" class="w-full bg-blue-600 hover:bg-blue-500 py-2 mt-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">⚔️</span> Создать матчи групп</button>
             <button onclick="startPlayoffs()" class="w-full bg-purple-600 hover:bg-purple-500 py-2 mt-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">🚀</span> Запустить Плей-офф</button>
-            <button onclick="finishTournament()" class="w-full bg-red-600/80 hover:bg-red-500 py-2 mt-4 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">📦</span> Завершить турнир и сохранить в Архив</button>
+            
+            <!-- НОВЫЙ БЛОК: ЗАВЕРШЕНИЕ ИЛИ УДАЛЕНИЕ -->
+            <div class="pt-3 mt-3 border-t border-slate-700/50 space-y-2">
+              <button onclick="archiveTournament()" class="w-full bg-green-600/80 hover:bg-green-500 py-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">📦</span> Завершить в Архив</button>
+              <button onclick="wipeTournament()" class="w-full bg-red-700/80 hover:bg-red-600 py-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">🗑️</span> Удалить без сохранения</button>
+            </div>
           </div>
           <div class="space-y-3 pt-3 border-t border-slate-700/50">
             <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Ручное создание матча</p>
@@ -152,7 +157,6 @@
     }
     window.closePlayerProfile = function() { document.getElementById('public-profile-modal').classList.add('hidden'); }
 
-    // ИСПРАВЛЕНИЕ 1: АВТО-ОБНОВЛЕНИЕ ИМЕНИ ВО ВСЕХ МАТЧАХ, ЕСЛИ ИГРОК ПОМЕНЯЛ НИК В НАСТРОЙКАХ
     window.saveProfile = async function() {
       const newName = document.getElementById('profile-nickname').value.trim(); const newPlat = document.getElementById('profile-platform').value;
       if (!newName) return Telegram.WebApp.showAlert('Имя не может быть пустым!');
@@ -251,7 +255,6 @@
       }).join('');
     }
 
-    // ИСПРАВЛЕНИЕ 2: ИСПОЛЬЗОВАНИЕ НАТИВНЫХ ОКОН TELEGRAM (Telegram.WebApp.showConfirm и showAlert)
     window.openProposeMode = function(matchId) { proposeModeMatchId = matchId; renderMatches(); }
     window.cancelProposeMode = function() { proposeModeMatchId = null; renderMatches(); }
     
@@ -380,8 +383,9 @@
       });
     }
 
-    window.finishTournament = function() {
-      Telegram.WebApp.showConfirm("⚠️ Вы уверены? Текущая таблица обнулится, а данные уйдут в архив!", async function(confirmed) {
+    // НОВЫЕ ФУНКЦИИ: АРХИВАЦИЯ И ПОЛНОЕ УДАЛЕНИЕ
+    window.archiveTournament = function() {
+      Telegram.WebApp.showConfirm("⚠️ Вы уверены? Текущая таблица обнулится, а данные уйдут в Архив!", async function(confirmed) {
         if (!confirmed) return;
         let tName = prompt("Название турнира (напр. 'Летний Кубок'):"); if (!tName) return;
         
@@ -390,7 +394,21 @@
           await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${u.id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: 0, losses: 0, goals_for: 0, goals_against: 0, group_name: 'Без группы', can_update_squad: true, current_squad_url: null }) });
         }
         for (let m of allMatches) { await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${m.id}`, { method: 'DELETE', headers: baseHeaders }); }
-        Telegram.WebApp.showAlert("✅ Турнир завершен и отправлен в архив."); await loadTournament();
+        Telegram.WebApp.showAlert("✅ Турнир сохранен в Архив."); await loadTournament();
+      });
+    }
+
+    window.wipeTournament = function() {
+      Telegram.WebApp.showConfirm("🚨 ВНИМАНИЕ! Вы собираетесь удалить турнир БЕЗ СОХРАНЕНИЯ. Вся статистика сгорит. Продолжить?", function(confirmed1) {
+        if (!confirmed1) return;
+        Telegram.WebApp.showConfirm("🚨 ТОЧНО УДАЛИТЬ? Действие необратимо!", async function(confirmed2) {
+          if (!confirmed2) return;
+          for (let u of allUsers) {
+            await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${u.id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: 0, losses: 0, goals_for: 0, goals_against: 0, group_name: 'Без группы', can_update_squad: true, current_squad_url: null }) });
+          }
+          for (let m of allMatches) { await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${m.id}`, { method: 'DELETE', headers: baseHeaders }); }
+          Telegram.WebApp.showAlert("🗑️ Турнир полностью удален."); window.switchTab('matches'); await loadTournament();
+        });
       });
     }
 
