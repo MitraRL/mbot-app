@@ -57,6 +57,7 @@
 
       <!-- ВКЛАДКА 2: РЕЙТИНГ -->
       <div id="tab-table" class="tab-content hidden">
+        <div class="text-xs text-slate-400 text-center mb-4 uppercase tracking-wider">💡 Нажми на игрока, чтобы открыть его профиль</div>
         <div id="db-players" class="space-y-6 text-slate-300">
           <div class="text-center py-4 animate-pulse">Загрузка рейтинга...</div>
         </div>
@@ -65,7 +66,7 @@
       <!-- ВКЛАДКА 3: ПРОФИЛЬ И НАСТРОЙКИ -->
       <div id="tab-profile" class="tab-content hidden space-y-6">
         
-        <!-- КАРТОЧКА ПРОФИЛЯ, СОСТАВОВ И ИСТОРИИ (генерируется в JS) -->
+        <!-- КАРТОЧКА ЛИЧНОГО ПРОФИЛЯ -->
         <div id="profile-content" class="bg-slate-800 rounded-2xl p-5 border border-slate-700/50 shadow-sm">
           <div class="text-center py-4 animate-pulse">Загрузка профиля...</div>
         </div>
@@ -128,7 +129,16 @@
           </div>
         </div>
       </div>
+    </div>
 
+    <!-- МОДАЛКА ПУБЛИЧНОГО ПРОФИЛЯ ИГРОКА (чужого) -->
+    <div id="public-profile-modal" class="hidden fixed inset-0 z-[60] bg-slate-900/90 backdrop-blur-sm flex justify-center items-end sm:items-center">
+      <div class="bg-slate-800 w-full max-w-md h-[85vh] sm:h-auto sm:max-h-[90vh] rounded-t-3xl sm:rounded-3xl border-t sm:border border-slate-700 shadow-2xl flex flex-col relative">
+        <button onclick="closePlayerProfile()" class="absolute top-4 right-4 bg-slate-700 hover:bg-slate-600 text-white rounded-full w-8 h-8 flex items-center justify-center transition z-10">✕</button>
+        <div id="public-profile-content" class="overflow-y-auto p-5 pb-10 scrollbar-hide">
+          <div class="text-center py-10 animate-pulse text-slate-400">Загрузка профиля...</div>
+        </div>
+      </div>
     </div>
 
     <!-- НИЖНЕЕ МЕНЮ -->
@@ -179,11 +189,11 @@
       document.getElementById('admin-panel').classList.remove('hidden');
     }
 
-    // ----- ОТРИСОВКА ПРОФИЛЯ -----
-    function renderProfile(me, history) {
-      let squadImg = me.current_squad_url 
-        ? `<img src="${me.current_squad_url}" class="w-full h-auto rounded-lg border border-slate-700/50 mt-2 shadow-lg">`
-        : `<div class="text-xs text-slate-500 bg-slate-900/50 p-4 rounded-lg border border-slate-800 text-center mt-2">Состав не загружен (Отправь фото боту)</div>`;
+    // ----- ОТРИСОВКА ПРОФИЛЕЙ (ЛИЧНОГО И ЧУЖОГО) -----
+    function generateProfileHtml(user, history) {
+      let squadImg = user.current_squad_url 
+        ? `<img src="${user.current_squad_url}" class="w-full h-auto rounded-lg border border-slate-700/50 mt-2 shadow-lg">`
+        : `<div class="text-xs text-slate-500 bg-slate-900/50 p-4 rounded-lg border border-slate-800 text-center mt-2">Состав не загружен</div>`;
 
       let historyHtml = '';
       if (history && history.length > 0) {
@@ -203,24 +213,24 @@
         historyHtml = `<div class="text-xs text-slate-500 text-center py-4 bg-slate-900/50 rounded-xl border border-slate-800">Завершенных турниров пока нет.</div>`;
       }
 
-      document.getElementById('profile-content').innerHTML = `
+      return `
         <div class="flex items-center space-x-4 mb-5 pb-5 border-b border-slate-700/50">
-          <div class="w-16 h-16 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-2xl font-bold shadow-lg border-2 border-slate-800">
-            ${me.username ? me.username.charAt(0).toUpperCase() : 'U'}
+          <div class="w-16 h-16 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-2xl font-bold shadow-lg border-2 border-slate-800 flex-shrink-0">
+            ${user.username ? user.username.charAt(0).toUpperCase() : 'U'}
           </div>
-          <div>
-            <h2 class="text-xl font-bold text-white leading-tight">${me.username}</h2>
-            <div class="inline-block mt-1 px-2 py-0.5 bg-blue-900/50 border border-blue-500/30 rounded text-xs text-blue-400 font-semibold">${me.platform}</div>
+          <div class="overflow-hidden">
+            <h2 class="text-xl font-bold text-white leading-tight truncate">${user.username}</h2>
+            <div class="inline-block mt-1 px-2 py-0.5 bg-blue-900/50 border border-blue-500/30 rounded text-xs text-blue-400 font-semibold">${user.platform}</div>
           </div>
         </div>
         
         <div class="mb-6">
           <h3 class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-2">Статистика текущего турнира</h3>
           <div class="grid grid-cols-4 gap-2 text-center bg-slate-900/80 p-3 rounded-xl border border-slate-700/50 shadow-inner">
-            <div><div class="text-[10px] text-slate-500 uppercase">Очки</div><div class="font-bold text-blue-400 text-lg">${(me.wins || 0) * 3}</div></div>
-            <div><div class="text-[10px] text-slate-500 uppercase">Поб</div><div class="font-bold text-white text-lg">${me.wins || 0}</div></div>
-            <div><div class="text-[10px] text-slate-500 uppercase">Пор</div><div class="font-bold text-white text-lg">${me.losses || 0}</div></div>
-            <div><div class="text-[10px] text-slate-500 uppercase">Голы</div><div class="font-bold text-white text-sm mt-1">${me.goals_for || 0}:${me.goals_against || 0}</div></div>
+            <div><div class="text-[10px] text-slate-500 uppercase">Очки</div><div class="font-bold text-blue-400 text-lg">${(user.wins || 0) * 3}</div></div>
+            <div><div class="text-[10px] text-slate-500 uppercase">Поб</div><div class="font-bold text-white text-lg">${user.wins || 0}</div></div>
+            <div><div class="text-[10px] text-slate-500 uppercase">Пор</div><div class="font-bold text-white text-lg">${user.losses || 0}</div></div>
+            <div><div class="text-[10px] text-slate-500 uppercase">Голы</div><div class="font-bold text-white text-sm mt-1">${user.goals_for || 0}:${user.goals_against || 0}</div></div>
           </div>
         </div>
 
@@ -238,15 +248,35 @@
       `;
     }
 
+    window.openPlayerProfile = async function(userId) {
+      const user = allUsers.find(u => u.id === userId);
+      if (!user) return;
+      
+      const modal = document.getElementById('public-profile-modal');
+      const content = document.getElementById('public-profile-content');
+      modal.classList.remove('hidden');
+      content.innerHTML = '<div class="text-center py-10 animate-pulse text-slate-400">Загрузка профиля...</div>';
+
+      try {
+        let historyRes = await fetch(`${SUPABASE_URL}/rest/v1/player_history?user_id=eq.${userId}&order=created_at.desc`, { headers: baseHeaders });
+        let history = await historyRes.json();
+        content.innerHTML = generateProfileHtml(user, history);
+      } catch (e) {
+        content.innerHTML = '<div class="text-center py-10 text-red-400">Ошибка загрузки профиля</div>';
+      }
+    }
+
+    window.closePlayerProfile = function() {
+      document.getElementById('public-profile-modal').classList.add('hidden');
+    }
+
     // ----- ОСНОВНЫЕ ФУНКЦИИ -----
     window.saveProfile = async function() {
       const newName = document.getElementById('profile-nickname').value.trim();
       const newPlat = document.getElementById('profile-platform').value;
       if (!newName) { alert('Имя не может быть пустым!'); return; }
       
-      await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${telegramId}`, {
-        method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ username: newName, platform: newPlat })
-      });
+      await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${telegramId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ username: newName, platform: newPlat }) });
       alert('Настройки профиля обновлены!');
       await loadTournament();
     }
@@ -273,12 +303,9 @@
       });
       
       let actId = '';
-      if (roundName === 'Дерево') actId = 'btn-tree';
-      else if (roundName === 'Группы') actId = 'btn-groups';
-      else if (roundName === '1/16 финала') actId = 'btn-1-16';
-      else if (roundName === '1/8 финала') actId = 'btn-1-8';
-      else if (roundName === '1/4 финала') actId = 'btn-1-4';
-      else if (roundName === 'Полуфинал') actId = 'btn-semi';
+      if (roundName === 'Дерево') actId = 'btn-tree'; else if (roundName === 'Группы') actId = 'btn-groups';
+      else if (roundName === '1/16 финала') actId = 'btn-1-16'; else if (roundName === '1/8 финала') actId = 'btn-1-8';
+      else if (roundName === '1/4 финала') actId = 'btn-1-4'; else if (roundName === 'Полуфинал') actId = 'btn-semi';
       else if (roundName === 'Финал') actId = 'btn-final';
       
       if (actId) {
@@ -287,14 +314,9 @@
       }
       
       if (roundName === 'Дерево') {
-        document.getElementById('db-matches').classList.add('hidden');
-        document.getElementById('db-bracket').classList.remove('hidden');
-        renderBracket();
+        document.getElementById('db-matches').classList.add('hidden'); document.getElementById('db-bracket').classList.remove('hidden'); renderBracket();
       } else {
-        document.getElementById('db-matches').classList.remove('hidden');
-        document.getElementById('db-bracket').classList.add('hidden');
-        editModeMatchId = null;
-        renderMatches();
+        document.getElementById('db-matches').classList.remove('hidden'); document.getElementById('db-bracket').classList.add('hidden'); editModeMatchId = null; renderMatches();
       }
     }
 
@@ -340,9 +362,7 @@
 
     async function sendNotification(username, text) {
       let user = allUsers.find(u => u.username === username);
-      if (user && user.id) {
-        try { await fetch(`${SUPABASE_URL}/rest/v1/notifications`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ telegram_id: user.id, message: text }) }); } catch(e) {}
-      }
+      if (user && user.id) { try { await fetch(`${SUPABASE_URL}/rest/v1/notifications`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ telegram_id: user.id, message: text }) }); } catch(e) {} }
     }
 
     function renderMatches() {
@@ -417,206 +437,89 @@
 
     window.editMatchMode = function(matchId) { editModeMatchId = matchId; renderMatches(); }
     window.cancelEdit = function() { editModeMatchId = null; renderMatches(); }
-    
     window.saveMatchEdit = async function(matchId) {
-      const p1 = document.getElementById(`edit-p1-${matchId}`).value.trim();
-      const p2 = document.getElementById(`edit-p2-${matchId}`).value.trim();
+      const p1 = document.getElementById(`edit-p1-${matchId}`).value.trim(); const p2 = document.getElementById(`edit-p2-${matchId}`).value.trim();
       const round = document.getElementById(`edit-round-${matchId}`).value;
       if (!p1 || !p2) return;
       await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ player1: p1, player2: p2, round: round }) });
       editModeMatchId = null; await loadTournament();
     }
-
     window.deleteMatch = async function(matchId) {
       if (!confirm('Удалить матч?')) return;
       await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'DELETE', headers: baseHeaders });
       await loadTournament();
     }
-
     window.rollbackMatch = async function(matchId, p1Name, p2Name, s1, s2) {
       if (!confirm('Отменить завершение матча?')) return;
-      let p1 = allUsers.find(u => u.username === p1Name);
-      let p2 = allUsers.find(u => u.username === p2Name);
-
-      if (p1) {
-        let wins = p1.wins || 0; let losses = p1.losses || 0;
-        if (s1 > s2 && wins > 0) wins--; if (s1 < s2 && losses > 0) losses--;
-        await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p1.id}`, {
-          method: 'PATCH', headers: baseHeaders,
-          body: JSON.stringify({ wins: wins, losses: losses, goals_for: Math.max(0, (p1.goals_for || 0) - s1), goals_against: Math.max(0, (p1.goals_against || 0) - s2) })
-        });
-      }
-      if (p2) {
-        let wins = p2.wins || 0; let losses = p2.losses || 0;
-        if (s2 > s1 && wins > 0) wins--; if (s2 < s1 && losses > 0) losses--;
-        await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p2.id}`, {
-          method: 'PATCH', headers: baseHeaders,
-          body: JSON.stringify({ wins: wins, losses: losses, goals_for: Math.max(0, (p2.goals_for || 0) - s2), goals_against: Math.max(0, (p2.goals_against || 0) - s1) })
-        });
-      }
-      await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ is_completed: false }) });
-      await loadTournament();
+      let p1 = allUsers.find(u => u.username === p1Name); let p2 = allUsers.find(u => u.username === p2Name);
+      if (p1) { let wins = p1.wins || 0; let losses = p1.losses || 0; if (s1 > s2 && wins > 0) wins--; if (s1 < s2 && losses > 0) losses--;
+        await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p1.id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: wins, losses: losses, goals_for: Math.max(0, (p1.goals_for || 0) - s1), goals_against: Math.max(0, (p1.goals_against || 0) - s2) }) }); }
+      if (p2) { let wins = p2.wins || 0; let losses = p2.losses || 0; if (s2 > s1 && wins > 0) wins--; if (s2 < s1 && losses > 0) losses--;
+        await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p2.id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: wins, losses: losses, goals_for: Math.max(0, (p2.goals_for || 0) - s2), goals_against: Math.max(0, (p2.goals_against || 0) - s1) }) }); }
+      await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ is_completed: false }) }); await loadTournament();
     }
-
     window.createMatch = async function() {
-      const p1 = document.getElementById('new-p1').value.trim();
-      const p2 = document.getElementById('new-p2').value.trim();
-      const round = document.getElementById('new-round').value;
+      const p1 = document.getElementById('new-p1').value.trim(); const p2 = document.getElementById('new-p2').value.trim(); const round = document.getElementById('new-round').value;
       if (!p1 || !p2) return;
-      await fetch(`${SUPABASE_URL}/rest/v1/matches`, {
-        method: 'POST', headers: baseHeaders,
-        body: JSON.stringify({ player1: p1, player2: p2, score1: 0, score2: 0, round: round, is_completed: false })
-      });
-      await sendNotification(p1, `🔥 Назначен матч!\nСтадия: ${round}\n${p1} vs ${p2}`); 
-      await sendNotification(p2, `🔥 Назначен матч!\nСтадия: ${round}\n${p1} vs ${p2}`);
-      document.getElementById('new-p1').value = ''; document.getElementById('new-p2').value = '';
-      window.switchTab('matches'); await loadTournament();
+      await fetch(`${SUPABASE_URL}/rest/v1/matches`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ player1: p1, player2: p2, score1: 0, score2: 0, round: round, is_completed: false }) });
+      await sendNotification(p1, `🔥 Назначен матч!\nСтадия: ${round}\n${p1} vs ${p2}`); await sendNotification(p2, `🔥 Назначен матч!\nСтадия: ${round}\n${p1} vs ${p2}`);
+      document.getElementById('new-p1').value = ''; document.getElementById('new-p2').value = ''; window.switchTab('matches'); await loadTournament();
     }
-
-    window.changeScore = async function(matchId, s1, s2, p1Name, p2Name) {
-      await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ score1: s1, score2: s2 }) });
-      await loadTournament();
-    }
+    window.changeScore = async function(matchId, s1, s2, p1Name, p2Name) { await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ score1: s1, score2: s2 }) }); await loadTournament(); }
     window.resetScore = async function(matchId, p1, p2) { window.changeScore(matchId, 0, 0, p1, p2); }
-
     window.finishMatch = async function(matchId, p1Name, p2Name, s1, s2) {
       if (!confirm('Завершить матч?')) return;
-      let p1 = allUsers.find(u => u.username === p1Name);
-      let p2 = allUsers.find(u => u.username === p2Name);
-
-      if (p1) {
-        let wins = p1.wins || 0; let losses = p1.losses || 0;
-        if (s1 > s2) wins++; if (s1 < s2) losses++;
-        await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p1.id}`, {
-          method: 'PATCH', headers: baseHeaders,
-          body: JSON.stringify({ wins: wins, losses: losses, goals_for: (p1.goals_for || 0) + s1, goals_against: (p1.goals_against || 0) + s2 })
-        });
-      }
-      if (p2) {
-        let wins = p2.wins || 0; let losses = p2.losses || 0;
-        if (s2 > s1) wins++; if (s2 < s1) losses++;
-        await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p2.id}`, {
-          method: 'PATCH', headers: baseHeaders,
-          body: JSON.stringify({ wins: wins, losses: losses, goals_for: (p2.goals_for || 0) + s2, goals_against: (p2.goals_against || 0) + s1 })
-        });
-      }
+      let p1 = allUsers.find(u => u.username === p1Name); let p2 = allUsers.find(u => u.username === p2Name);
+      if (p1) { let wins = p1.wins || 0; let losses = p1.losses || 0; if (s1 > s2) wins++; if (s1 < s2) losses++;
+        await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p1.id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: wins, losses: losses, goals_for: (p1.goals_for || 0) + s1, goals_against: (p1.goals_against || 0) + s2 }) }); }
+      if (p2) { let wins = p2.wins || 0; let losses = p2.losses || 0; if (s2 > s1) wins++; if (s2 < s1) losses++;
+        await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p2.id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: wins, losses: losses, goals_for: (p2.goals_for || 0) + s2, goals_against: (p2.goals_against || 0) + s1 }) }); }
       await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ is_completed: true }) });
-      await sendNotification(p1Name, `🏁 Матч завершен! ${p1Name} [${s1} : ${s2}] ${p2Name}`); 
-      await sendNotification(p2Name, `🏁 Матч завершен! ${p1Name} [${s1} : ${s2}] ${p2Name}`);
+      await sendNotification(p1Name, `🏁 Матч завершен! ${p1Name} [${s1} : ${s2}] ${p2Name}`); await sendNotification(p2Name, `🏁 Матч завершен! ${p1Name} [${s1} : ${s2}] ${p2Name}`);
       await loadTournament();
     }
-
     window.autoDrawGroups = async function() {
-      const players = allUsers.filter(u => u.username !== 'Аноним');
-      const n = players.length;
+      const players = allUsers.filter(u => u.username !== 'Аноним'); const n = players.length;
       if (n < 4) { alert('Для старта нужно минимум 4 участника!'); return; }
       if (!confirm(`Система перемешает игроков заново и закроет прием составов. Продолжить?`)) return;
-
-      let playoffSpots = 4;
-      if (n >= 32) playoffSpots = 32; else if (n >= 16) playoffSpots = 16; else if (n >= 8) playoffSpots = 8;
-      let groupCount = playoffSpots / 2;
-      let shuffled = [...players].sort(() => 0.5 - Math.random());
-      let newGroups = Array.from({length: groupCount}, () => []);
-      
+      let playoffSpots = 4; if (n >= 32) playoffSpots = 32; else if (n >= 16) playoffSpots = 16; else if (n >= 8) playoffSpots = 8;
+      let groupCount = playoffSpots / 2; let shuffled = [...players].sort(() => 0.5 - Math.random()); let newGroups = Array.from({length: groupCount}, () => []);
       shuffled.forEach((user, index) => { newGroups[index % groupCount].push(user); });
-
       alert('Распределяем по группам и фиксируем составы...');
       for (let i = 0; i < groupCount; i++) {
         let groupName = 'Группа ' + String.fromCharCode(65 + i);
-        for (let user of newGroups[i]) {
-          await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${user.id}`, {
-            method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ group_name: groupName, can_update_squad: false })
-          });
-        }
+        for (let user of newGroups[i]) { await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${user.id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ group_name: groupName, can_update_squad: false }) }); }
       }
-      alert(`Жеребьевка завершена! Составы зафиксированы.`);
-      await loadTournament();
-      window.switchTab('table');
+      alert(`Жеребьевка завершена! Составы зафиксированы.`); await loadTournament(); window.switchTab('table');
     }
-
     window.startPlayoffs = async function() {
       if (!confirm('Создать сетку плей-офф? Топ-2 из каждой группы попадут в сетку!')) return;
-
-      const groupedUsers = {};
-      allUsers.forEach(u => {
-        const gName = u.group_name;
-        if (gName && gName !== 'Без группы') {
-          if(!groupedUsers[gName]) groupedUsers[gName] = [];
-          groupedUsers[gName].push(u);
-        }
-      });
-
-      const validGroupNames = Object.keys(groupedUsers).sort();
-      const gCount = validGroupNames.length;
-      if (gCount === 0) { alert('Группы не найдены!'); return; }
-
-      let roundName = 'Полуфинал';
-      if (gCount === 4) roundName = '1/4 финала'; else if (gCount === 8) roundName = '1/8 финала'; else if (gCount === 16) roundName = '1/16 финала';
-
+      const groupedUsers = {}; allUsers.forEach(u => { const gName = u.group_name; if (gName && gName !== 'Без группы') { if(!groupedUsers[gName]) groupedUsers[gName] = []; groupedUsers[gName].push(u); } });
+      const validGroupNames = Object.keys(groupedUsers).sort(); const gCount = validGroupNames.length; if (gCount === 0) { alert('Группы не найдены!'); return; }
+      let roundName = 'Полуфинал'; if (gCount === 4) roundName = '1/4 финала'; else if (gCount === 8) roundName = '1/8 финала'; else if (gCount === 16) roundName = '1/16 финала';
       for (let i = 0; i < gCount; i += 2) {
-        let g1Name = validGroupNames[i]; let g2Name = validGroupNames[i+1];
-        if (!g1Name || !g2Name) continue;
-        let u1_1 = groupedUsers[g1Name][0]; let u1_2 = groupedUsers[g1Name][1]; 
-        let u2_1 = groupedUsers[g2Name][0]; let u2_2 = groupedUsers[g2Name][1]; 
-
+        let g1Name = validGroupNames[i]; let g2Name = validGroupNames[i+1]; if (!g1Name || !g2Name) continue;
+        let u1_1 = groupedUsers[g1Name][0]; let u1_2 = groupedUsers[g1Name][1]; let u2_1 = groupedUsers[g2Name][0]; let u2_2 = groupedUsers[g2Name][1]; 
         if (u1_1 && u2_2) await fetch(`${SUPABASE_URL}/rest/v1/matches`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ player1: u1_1.username, player2: u2_2.username, score1: 0, score2: 0, round: roundName, is_completed: false }) });
         if (u2_1 && u1_2) await fetch(`${SUPABASE_URL}/rest/v1/matches`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ player1: u2_1.username, player2: u1_2.username, score1: 0, score2: 0, round: roundName, is_completed: false }) });
       }
-      alert(`Сетка плей-офф сформирована!`);
-      setRound('Дерево'); window.switchTab('matches'); await loadTournament();
+      alert(`Сетка плей-офф сформирована!`); setRound('Дерево'); window.switchTab('matches'); await loadTournament();
     }
-
-    // --- КНОПКА ЗАВЕРШЕНИЯ ТУРНИРА (АДМИН) ---
     window.finishTournament = async function() {
-      let tName = prompt("Введите название завершенного турнира (например, 'Летний Кубок 2026'):");
-      if (!tName) return;
-      if (!confirm("⚠️ Вы абсолютно уверены? Это сохранит статистику игроков в архив и полностью ОБНУЛИТ текущую турнирную таблицу и сетку для нового сезона!")) return;
-
-      alert("Сохраняем историю в базу... Пожалуйста, подождите (это может занять около 10 секунд).");
-      
-      // 1. Сохраняем статистику тех, кто играл
+      let tName = prompt("Введите название завершенного турнира (например, 'Летний Кубок 2026'):"); if (!tName) return;
+      if (!confirm("⚠️ Вы уверены? Это обнулит текущую таблицу и перенесет стату игроков в их архив!")) return;
+      alert("Сохраняем историю в базу... Пожалуйста, подождите.");
       for (let u of allUsers) {
         if ((u.wins > 0 || u.losses > 0 || u.goals_for > 0 || u.goals_against > 0) || u.current_squad_url) {
-          await fetch(`${SUPABASE_URL}/rest/v1/player_history`, {
-            method: 'POST', headers: baseHeaders,
-            body: JSON.stringify({
-              user_id: u.id, tournament_name: tName, wins: u.wins, losses: u.losses,
-              goals_for: u.goals_for, goals_against: u.goals_against, squad_url: u.current_squad_url
-            })
-          });
+          await fetch(`${SUPABASE_URL}/rest/v1/player_history`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ user_id: u.id, tournament_name: tName, wins: u.wins, losses: u.losses, goals_for: u.goals_for, goals_against: u.goals_against, squad_url: u.current_squad_url }) });
         }
-        
-        // 2. Обнуляем таблицу users
-        await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${u.id}`, {
-          method: 'PATCH', headers: baseHeaders,
-          body: JSON.stringify({
-            wins: 0, losses: 0, goals_for: 0, goals_against: 0,
-            group_name: 'Без группы', can_update_squad: true, current_squad_url: null
-          })
-        });
+        await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${u.id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: 0, losses: 0, goals_for: 0, goals_against: 0, group_name: 'Без группы', can_update_squad: true, current_squad_url: null }) });
       }
-
-      // 3. Удаляем все текущие матчи
-      for (let m of allMatches) {
-        await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${m.id}`, { method: 'DELETE', headers: baseHeaders });
-      }
-
-      alert("✅ Турнир успешно завершен! Вся статистика и составы отправлены в профили игроков.");
-      await loadTournament();
+      for (let m of allMatches) { await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${m.id}`, { method: 'DELETE', headers: baseHeaders }); }
+      alert("✅ Турнир успешно завершен! Вся статистика и составы в архиве."); await loadTournament();
     }
-
-    window.deletePlayer = async function(userId) {
-      if (!confirm('Удалить игрока?')) return;
-      await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${userId}`, { method: 'DELETE', headers: baseHeaders });
-      await loadTournament();
-    }
-
-    window.changeGroup = async function(userId) {
-      let newGroup = prompt('Группа:', 'Группа A');
-      if (!newGroup) return;
-      await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${userId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ group_name: newGroup }) });
-      await loadTournament();
-    }
+    window.deletePlayer = async function(userId) { if (!confirm('Удалить игрока?')) return; await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${userId}`, { method: 'DELETE', headers: baseHeaders }); await loadTournament(); }
+    window.changeGroup = async function(userId) { let newGroup = prompt('Группа:', 'Группа A'); if (!newGroup) return; await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${userId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ group_name: newGroup }) }); await loadTournament(); }
 
     async function loadTournament() {
       let res = await fetch(`${SUPABASE_URL}/rest/v1/users?select=*`, { headers: baseHeaders });
@@ -624,38 +527,26 @@
       let me = allUsers.find(u => u.id === telegramId);
       
       if (!me || !me.platform || me.platform === 'Неизвестно') {
-        document.getElementById('registration-screen').classList.remove('hidden');
-        document.getElementById('registration-screen').classList.add('flex');
-        document.getElementById('main-app').classList.add('hidden');
+        document.getElementById('registration-screen').classList.remove('hidden'); document.getElementById('registration-screen').classList.add('flex'); document.getElementById('main-app').classList.add('hidden');
         return; 
       }
       
-      document.getElementById('registration-screen').classList.add('hidden');
-      document.getElementById('registration-screen').classList.remove('flex');
-      document.getElementById('main-app').classList.remove('hidden');
-      
-      document.getElementById('profile-nickname').value = me.username || '';
-      document.getElementById('profile-platform').value = me.platform;
+      document.getElementById('registration-screen').classList.add('hidden'); document.getElementById('registration-screen').classList.remove('flex'); document.getElementById('main-app').classList.remove('hidden');
+      document.getElementById('profile-nickname').value = me.username || ''; document.getElementById('profile-platform').value = me.platform;
 
-      // ЗАГРУЗКА ИСТОРИИ ИГРОКА ИЗ БД И ОТРИСОВКА ПРОФИЛЯ
       try {
         let historyRes = await fetch(`${SUPABASE_URL}/rest/v1/player_history?user_id=eq.${telegramId}&order=created_at.desc`, { headers: baseHeaders });
         let myHistory = await historyRes.json();
-        renderProfile(me, myHistory);
+        document.getElementById('profile-content').innerHTML = generateProfileHtml(me, myHistory);
       } catch (e) { console.error("Ошибка загрузки истории", e); }
       
       allUsers.sort((a, b) => {
         let ptsA = (a.wins || 0) * 3; let ptsB = (b.wins || 0) * 3;
-        if (ptsA !== ptsB) return ptsB - ptsA;
-        return ((b.goals_for || 0) - (b.goals_against || 0)) - ((a.goals_for || 0) - (a.goals_against || 0));
+        if (ptsA !== ptsB) return ptsB - ptsA; return ((b.goals_for || 0) - (b.goals_against || 0)) - ((a.goals_for || 0) - (a.goals_against || 0));
       });
 
       const groupedUsers = {};
-      allUsers.forEach(u => {
-        const gName = u.group_name || 'Без группы';
-        if(!groupedUsers[gName]) groupedUsers[gName] = [];
-        groupedUsers[gName].push(u);
-      });
+      allUsers.forEach(u => { const gName = u.group_name || 'Без группы'; if(!groupedUsers[gName]) groupedUsers[gName] = []; groupedUsers[gName].push(u); });
 
       let playersHtml = '';
       for (const [groupName, playersInGroup] of Object.entries(groupedUsers)) {
@@ -666,7 +557,7 @@
           const platIcon = user.platform === 'PlayStation' ? '🎮 PS' : (user.platform === 'Xbox' ? '❎ Xbox' : '💻 PC');
           
           return `
-            <div class="p-4 rounded-xl border shadow-sm mb-3 ${isMe ? 'border-blue-500/50 bg-blue-900/20' : 'border-slate-700/50 bg-slate-800'}">
+            <div onclick="openPlayerProfile(${user.id})" class="cursor-pointer p-4 rounded-xl border shadow-sm mb-3 transition hover:bg-slate-700/80 ${isMe ? 'border-blue-500/50 bg-blue-900/20' : 'border-slate-700/50 bg-slate-800'} relative">
               <div class="flex items-center justify-between mb-3">
                 <div class="flex items-center overflow-hidden">
                   <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 text-blue-400 text-sm flex-shrink-0">${medal}</div>
@@ -676,13 +567,13 @@
                   </div>
                 </div>
                 ${(telegramId === ADMIN_ID) ? `
-                  <div class="flex space-x-2 pl-2">
-                    <button onclick="changeGroup(${user.id})" class="text-blue-400/70 hover:text-blue-400 px-2 py-1 bg-slate-900 rounded text-[10px] uppercase font-bold transition">⚙️</button>
-                    <button onclick="deletePlayer(${user.id})" class="text-red-400/50 hover:text-red-400 px-2 py-1 rounded text-xs transition">✕</button>
+                  <div class="flex space-x-2 pl-2 relative z-10">
+                    <button onclick="event.stopPropagation(); changeGroup(${user.id})" class="text-blue-400/70 hover:text-blue-400 px-2 py-1 bg-slate-900 rounded text-[10px] uppercase font-bold transition">⚙️</button>
+                    <button onclick="event.stopPropagation(); deletePlayer(${user.id})" class="text-red-400/50 hover:text-red-400 px-2 py-1 rounded text-xs transition">✕</button>
                   </div>
-                ` : ''}
+                ` : '<div class="text-slate-500 text-xs opacity-50">👁️</div>'}
               </div>
-              <div class="grid grid-cols-3 gap-2 text-center text-xs bg-slate-900/50 p-2 rounded-lg text-slate-400">
+              <div class="grid grid-cols-3 gap-2 text-center text-xs bg-slate-900/50 p-2 rounded-lg text-slate-400 pointer-events-none">
                 <div>Поб: <span class="text-white font-bold">${user.wins || 0} / ${user.losses || 0}</span></div>
                 <div>Голы: <span class="text-white font-bold">${user.goals_for || 0} : ${user.goals_against || 0}</span></div>
                 <div>Очки: <span class="text-blue-400 font-bold">${(user.wins || 0) * 3}</span></div>
@@ -696,8 +587,7 @@
       allMatches = await matchesRes.json();
       allMatches.sort((a, b) => (a.is_completed === b.is_completed) ? 0 : a.is_completed ? 1 : -1);
       
-      if (currentRound === 'Дерево') renderBracket();
-      else renderMatches();
+      if (currentRound === 'Дерево') renderBracket(); else renderMatches();
     }
     
     loadTournament();
