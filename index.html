@@ -12,6 +12,31 @@
     
     <h1 class="text-2xl font-bold text-center mt-2 mb-6 text-slate-100">Сетка турнира</h1>
     
+    <!-- Скрытая панель администратора (появится только у тебя) -->
+    <div id="admin-panel" class="hidden bg-slate-800/80 border border-blue-500/40 rounded-2xl p-4 mb-6 shadow-lg">
+      <h2 class="text-sm font-bold text-blue-400 mb-3 flex items-center">
+        👑 Панель организатора
+      </h2>
+      
+      <!-- Форма создания матча -->
+      <div class="space-y-3">
+        <div class="grid grid-cols-2 gap-2">
+          <input id="new-p1" type="text" placeholder="Игрок 1" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
+          <input id="new-p2" type="text" placeholder="Игрок 2" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
+        </div>
+        <select id="new-round" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
+          <option value="1/8 финала">1/8 финала</option>
+          <option value="1/4 финала">1/4 финала</option>
+          <option value="Полуфинал">Полуфинал</option>
+          <option value="Финал">Финал</option>
+        </select>
+        <button onclick="createMatch()" class="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded-xl text-xs font-semibold text-white transition">
+          + Создать матч
+        </button>
+      </div>
+    </div>
+
+    <!-- Настройки профиля: Смена никнейма -->
     <div class="bg-slate-800 rounded-2xl p-4 mb-6 border border-slate-700/50 shadow-sm">
       <p class="text-sm text-slate-400 mb-2">Твое имя в таблице:</p>
       <div class="flex space-x-2">
@@ -48,6 +73,9 @@
     const tgUsername = (tgUser && tgUser.username) ? tgUser.username : 'Гость';
     const telegramId = (tgUser && tgUser.id) ? tgUser.id : Math.floor(Math.random() * 1000000);
 
+    // Твой ID организатора
+    const ADMIN_ID = 438290253;
+
     const SUPABASE_URL = 'https://kvsrxuibrovumaikqptk.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2c3J4dWlicm92dW1haWtxcHRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4Nzc0NTYsImV4cCI6MjEwMDQ1MzQ1Nn0.uKkIbZi7I0Q0jL0oMMq5k4ABQ_ge18yJo7tYSB_PYRI';
     
@@ -57,21 +85,21 @@
       'Content-Type': 'application/json'
     };
 
-    // Глобальные переменные для фильтрации
     let allMatches = [];
     let currentRound = '1/8 финала';
 
-    // Функция переключения вкладок
+    // Проверяем админские права при запуске
+    if (telegramId === ADMIN_ID) {
+      document.getElementById('admin-panel').classList.remove('hidden');
+    }
+
     window.setRound = function(roundName) {
       currentRound = roundName;
-      
-      // Обновляем стили всех кнопок (сбрасываем в серый)
       const buttons = document.querySelectorAll('#round-buttons button');
       buttons.forEach(btn => {
         btn.className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition';
       });
 
-      // Находим нажатую кнопку и красим в синий
       let activeBtnId = '';
       if (roundName === '1/8 финала') activeBtnId = 'btn-1-8';
       else if (roundName === '1/4 финала') activeBtnId = 'btn-1-4';
@@ -81,17 +109,13 @@
       if (activeBtnId) {
         document.getElementById(activeBtnId).className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-blue-500 text-white transition';
       }
-
-      // Перерисовываем матчи
       renderMatches();
     }
 
-    // Функция отрисовки матчей в зависимости от выбранной вкладки
     function renderMatches() {
       const container = document.getElementById('db-matches');
-      
-      // Фильтруем матчи по выбранному раунду
       const filteredMatches = allMatches.filter(m => m.round === currentRound);
+      const isAdmin = (telegramId === ADMIN_ID);
 
       if (filteredMatches.length > 0) {
         container.innerHTML = filteredMatches.map(m => `
@@ -102,6 +126,14 @@
               <span class="w-1/5 text-center text-blue-400 text-lg">${m.score1} : ${m.score2}</span> 
               <span class="w-2/5 text-left truncate pl-2">${m.player2 || 'Ожидание...'}</span>
             </div>
+            
+            ${isAdmin ? `
+              <div class="mt-4 pt-3 border-t border-slate-700/50 flex justify-center space-x-2">
+                <button onclick="changeScore(${m.id}, ${m.score1 + 1}, ${m.score2})" class="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-xs">+1 к ${m.player1}</button>
+                <button onclick="changeScore(${m.id}, ${m.score1}, ${m.score2 + 1})" class="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-xs">+1 к ${m.player2}</button>
+                <button onclick="resetScore(${m.id})" class="bg-red-900/40 hover:bg-red-900/60 text-red-300 px-2 py-1 rounded text-xs">Сброс</button>
+              </div>
+            ` : ''}
           </div>
         `).join('');
       } else {
@@ -109,11 +141,56 @@
       }
     }
 
+    // Создание нового матча прямо из мини-аппа
+    window.createMatch = async function() {
+      const p1 = document.getElementById('new-p1').value.trim();
+      const p2 = document.getElementById('new-p2').value.trim();
+      const round = document.getElementById('new-round').value;
+
+      if (!p1 || !p2) {
+        alert('Введи имена обоих игроков!');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/matches`, {
+          method: 'POST',
+          headers: baseHeaders,
+          body: JSON.stringify({ player1: p1, player2: p2, score1: 0, score2: 0, round: round })
+        });
+
+        if (!res.ok) throw new Error('Не удалось создать матч');
+
+        document.getElementById('new-p1').value = '';
+        document.getElementById('new-p2').value = '';
+        await loadTournament();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    // Изменение счета админскими кнопками
+    window.changeScore = async function(matchId, s1, s2) {
+      try {
+        await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, {
+          method: 'PATCH',
+          headers: baseHeaders,
+          body: JSON.stringify({ score1: s1, score2: s2 })
+        });
+        await loadTournament();
+      } catch (err) {
+        alert('Ошибка обновления счета');
+      }
+    }
+
+    window.resetScore = async function(matchId) {
+      window.changeScore(matchId, 0, 0);
+    }
+
     async function loadTournament() {
       const usersContainer = document.getElementById('db-players');
       
       try {
-        // --- 1. ЗАГРУЗКА УЧАСТНИКОВ (без изменений) ---
         let response = await fetch(`${SUPABASE_URL}/rest/v1/users?select=*`, { method: 'GET', headers: baseHeaders });
         if (!response.ok) throw new Error('Ошибка чтения пользователей');
         let users = await response.json();
@@ -155,18 +232,10 @@
           usersContainer.innerHTML = '<div class="text-slate-500 text-center py-4">Список пока пуст.</div>';
         }
 
-        // --- 2. ЗАГРУЗКА И ФИЛЬТРАЦИЯ МАТЧЕЙ ---
-        try {
-          const matchesRes = await fetch(`${SUPABASE_URL}/rest/v1/matches?select=*`, { method: 'GET', headers: baseHeaders });
-          if (!matchesRes.ok) throw new Error('Таблица matches недоступна');
-          allMatches = await matchesRes.json();
-          
-          // Вызываем отрисовку для текущей вкладки
-          renderMatches();
-          
-        } catch (matchErr) {
-          document.getElementById('db-matches').innerHTML = '<div class="text-center text-yellow-500/80 text-xs py-4">Ошибка загрузки матчей.</div>';
-        }
+        const matchesRes = await fetch(`${SUPABASE_URL}/rest/v1/matches?select=*`, { method: 'GET', headers: baseHeaders });
+        if (!matchesRes.ok) throw new Error('Таблица matches недоступна');
+        allMatches = await matchesRes.json();
+        renderMatches();
 
       } catch (err) {
         usersContainer.innerHTML = `<div class="bg-red-900/50 p-3 rounded text-red-200 text-xs">Ошибка: ${err.message}</div>`;
