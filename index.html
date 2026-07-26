@@ -72,7 +72,6 @@
             <button onclick="generateGroupMatches()" class="w-full bg-blue-600 hover:bg-blue-500 py-2 mt-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">⚔️</span> Создать матчи групп</button>
             <button onclick="startPlayoffs()" class="w-full bg-purple-600 hover:bg-purple-500 py-2 mt-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">🚀</span> Запустить Плей-офф</button>
             
-            <!-- НОВЫЙ БЛОК: ЗАВЕРШЕНИЕ ИЛИ УДАЛЕНИЕ -->
             <div class="pt-3 mt-3 border-t border-slate-700/50 space-y-2">
               <button onclick="archiveTournament()" class="w-full bg-green-600/80 hover:bg-green-500 py-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">📦</span> Завершить в Архив</button>
               <button onclick="wipeTournament()" class="w-full bg-red-700/80 hover:bg-red-600 py-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">🗑️</span> Удалить без сохранения</button>
@@ -270,10 +269,7 @@
     
     window.rejectScore = function(matchId) {
       Telegram.WebApp.showConfirm('Отменить этот предложенный счет?', async function(confirmed) {
-        if(confirmed) {
-          await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ proposed_score1: null, proposed_score2: null, proposed_by: null }) });
-          await loadTournament();
-        }
+        if(confirmed) { await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ proposed_score1: null, proposed_score2: null, proposed_by: null }) }); await loadTournament(); }
       });
     }
     
@@ -287,16 +283,49 @@
     window.cancelEdit = function() { editModeMatchId = null; renderMatches(); }
     window.saveMatchEdit = async function(id) { const p1 = document.getElementById(`edit-p1-${id}`).value; const p2 = document.getElementById(`edit-p2-${id}`).value; if(!p1||!p2)return; await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ player1: p1, player2: p2 }) }); editModeMatchId = null; await loadTournament(); }
     
-    window.deleteMatch = function(id) { 
-      Telegram.WebApp.showConfirm('Удалить матч навсегда?', async function(confirmed) {
-        if(confirmed) { await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${id}`, { method: 'DELETE', headers: baseHeaders }); await loadTournament(); }
-      }); 
-    }
+    window.deleteMatch = function(id) { Telegram.WebApp.showConfirm('Удалить матч навсегда?', async function(confirmed) { if(confirmed) { await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${id}`, { method: 'DELETE', headers: baseHeaders }); await loadTournament(); } }); }
     
     window.finishMatch = function(matchId, p1Name, p2Name, s1, s2) {
       Telegram.WebApp.showConfirm('Завершить этот матч принудительно (как Администратор)?', function(confirmed) {
         if (confirmed) executeFinishMatch(matchId, p1Name, p2Name, s1, s2);
       });
+    }
+
+    // НОВАЯ ФУНКЦИЯ ДЛЯ АВТО-ПРОДВИЖЕНИЯ СЕТКИ
+    async function checkAndAdvancePlayoffs(finishedRoundName) {
+      const playoffOrder = ['1/16 финала', '1/8 финала', '1/4 финала', 'Полуфинал', 'Финал'];
+      let roundIndex = playoffOrder.indexOf(finishedRoundName);
+      if (roundIndex === -1 || roundIndex === playoffOrder.length - 1) return; // Это не плей-офф или это уже Финал
+
+      let nextRound = playoffOrder[roundIndex + 1];
+      let matchesInRound = allMatches.filter(m => m.round === finishedRoundName);
+      
+      // Сортируем матчи по ID, чтобы сохранить структуру дерева (кто из какой ветки вышел)
+      matchesInRound.sort((a, b) => a.id - b.id);
+
+      if (matchesInRound.length === 0 || !matchesInRound.every(m => m.is_completed)) return; // Еще не все доиграли
+
+      if (allMatches.some(m => m.round === nextRound)) return; // Следующий раунд уже сгенерирован
+
+      let promises = [];
+      for (let i = 0; i < matchesInRound.length; i += 2) {
+        let m1 = matchesInRound[i]; let m2 = matchesInRound[i+1];
+        if (!m1 || !m2) continue;
+
+        let w1 = m1.score1 > m1.score2 ? m1.player1 : m1.player2;
+        let w2 = m2.score1 > m2.score2 ? m2.player1 : m2.player2;
+
+        if (w1 && w2) {
+          promises.push(fetch(`${SUPABASE_URL}/rest/v1/matches`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ player1: w1, player2: w2, score1: 0, score2: 0, round: nextRound, is_completed: false }) }));
+          sendNotification(w1, `🔥 Все матчи раунда сыграны! Ты прошел дальше! Твой соперник в ${nextRound}: ${w2}`);
+          sendNotification(w2, `🔥 Все матчи раунда сыграны! Ты прошел дальше! Твой соперник в ${nextRound}: ${w1}`);
+        }
+      }
+
+      if (promises.length > 0) {
+        await Promise.all(promises);
+        Telegram.WebApp.showAlert(`Все матчи ${finishedRoundName} завершены! Сетка автоматически продвинулась в ${nextRound}.`);
+      }
     }
 
     async function executeFinishMatch(matchId, p1Name, p2Name, s1, s2) {
@@ -305,6 +334,16 @@
       if (p2) { let w = p2.wins||0; let l = p2.losses||0; if(s2>s1) w++; if(s2<s1) l++; await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p2.id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: w, losses: l, goals_for: (p2.goals_for||0)+s2, goals_against: (p2.goals_against||0)+s1 }) }); }
       await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ is_completed: true, score1: s1, score2: s2, proposed_score1: null, proposed_score2: null, proposed_by: null }) });
       await sendNotification(p1Name, `🏁 Матч завершен! ${p1Name} [${s1} : ${s2}] ${p2Name}`); await sendNotification(p2Name, `🏁 Матч завершен! ${p1Name} [${s1} : ${s2}] ${p2Name}`);
+      
+      // Сразу перезапрашиваем матчи, чтобы проверить статус текущего раунда
+      let mRes = await fetch(`${SUPABASE_URL}/rest/v1/matches?select=*`, { headers: baseHeaders }); 
+      allMatches = await mRes.json();
+      
+      let finishedMatch = allMatches.find(m => m.id === matchId);
+      if (finishedMatch && finishedMatch.round !== 'Группы' && finishedMatch.round !== 'Финал') {
+         await checkAndAdvancePlayoffs(finishedMatch.round); // Магия авто-плей-оффа
+      }
+      
       await loadTournament();
     }
     
@@ -383,7 +422,6 @@
       });
     }
 
-    // НОВЫЕ ФУНКЦИИ: АРХИВАЦИЯ И ПОЛНОЕ УДАЛЕНИЕ
     window.archiveTournament = function() {
       Telegram.WebApp.showConfirm("⚠️ Вы уверены? Текущая таблица обнулится, а данные уйдут в Архив!", async function(confirmed) {
         if (!confirmed) return;
