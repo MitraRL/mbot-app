@@ -24,12 +24,12 @@
 
   <div id="main-app" class="hidden">
     <div class="max-w-md mx-auto p-4 pb-24">
-      <h1 class="text-xl font-bold text-center mt-2 mb-6 text-slate-100 uppercase tracking-wider" id="page-title">Сетка турнира</h1>
+      <h1 class="text-xl font-bold text-center mt-2 mb-6 text-slate-100 uppercase tracking-wider" id="page-title">Расписание матчей</h1>
 
+      <!-- ВКЛАДКА 1: МАТЧИ -->
       <div id="tab-matches" class="tab-content block">
         <div class="flex overflow-x-auto space-x-2 pb-2 mb-4 scrollbar-hide" id="round-buttons">
-          <button onclick="setRound('Дерево')" id="btn-tree" class="px-5 py-2.5 rounded-full text-sm font-bold bg-indigo-600 text-white transition whitespace-nowrap shadow-lg shadow-indigo-500/30 border border-indigo-400/50">🌳 Сетка</button>
-          <button onclick="setRound('Группы')" id="btn-groups" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap">Группы</button>
+          <button onclick="setRound('Группы')" id="btn-groups" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-blue-500 text-white transition whitespace-nowrap shadow-lg shadow-blue-500/30">Группы</button>
           <button onclick="setRound('1/16 финала')" id="btn-1-16" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap">1/16</button>
           <button onclick="setRound('1/8 финала')" id="btn-1-8" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap">1/8</button>
           <button onclick="setRound('1/4 финала')" id="btn-1-4" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap">1/4</button>
@@ -37,14 +37,20 @@
           <button onclick="setRound('Финал')" id="btn-final" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap">Финал</button>
         </div>
         <div id="db-matches" class="space-y-4"></div>
-        <div id="db-bracket" class="hidden overflow-x-auto pb-6 pt-2 scrollbar-hide"></div>
       </div>
 
+      <!-- ВКЛАДКА 2: СЕТКА ПЛЕЙ-ОФФ -->
+      <div id="tab-bracket" class="tab-content hidden">
+        <div id="db-bracket" class="overflow-x-auto pb-6 pt-2 scrollbar-hide"></div>
+      </div>
+
+      <!-- ВКЛАДКА 3: РЕЙТИНГ (ГРУППЫ) -->
       <div id="tab-table" class="tab-content hidden">
         <div class="text-xs text-slate-400 text-center mb-4 uppercase tracking-wider">💡 Нажми на игрока, чтобы открыть его профиль</div>
         <div id="db-players" class="space-y-6 text-slate-300"><div class="text-center py-4 animate-pulse">Загрузка рейтинга...</div></div>
       </div>
 
+      <!-- ВКЛАДКА 4: ПРОФИЛЬ -->
       <div id="tab-profile" class="tab-content hidden space-y-6">
         <div id="profile-content" class="bg-slate-800 rounded-2xl p-5 border border-slate-700/50 shadow-sm"><div class="text-center py-4 animate-pulse">Загрузка профиля...</div></div>
         
@@ -83,6 +89,7 @@
       </div>
     </div>
 
+    <!-- МОДАЛКА ПРОФИЛЯ -->
     <div id="public-profile-modal" class="hidden fixed inset-0 z-[60] bg-slate-900/90 backdrop-blur-sm flex justify-center items-end sm:items-center">
       <div class="bg-slate-800 w-full max-w-md h-[85vh] sm:h-auto sm:max-h-[90vh] rounded-t-3xl sm:rounded-3xl border-t sm:border border-slate-700 shadow-2xl flex flex-col relative">
         <button onclick="closePlayerProfile()" class="absolute top-4 right-4 bg-slate-700 hover:bg-slate-600 text-white rounded-full w-8 h-8 flex items-center justify-center transition z-10">✕</button>
@@ -90,11 +97,13 @@
       </div>
     </div>
 
+    <!-- НИЖНЕЕ МЕНЮ (4 КНОПКИ) -->
     <div class="fixed bottom-0 left-0 w-full bg-slate-900/95 backdrop-blur-md border-t border-slate-800 z-50">
       <div class="max-w-md mx-auto flex justify-around p-2 pb-safe">
-        <button onclick="switchTab('matches')" id="nav-matches" class="nav-btn flex flex-col items-center p-2 text-blue-500 transition w-1/3"><span class="text-2xl mb-1">⚽</span><span class="text-[10px] font-medium">Матчи</span></button>
-        <button onclick="switchTab('table')" id="nav-table" class="nav-btn flex flex-col items-center p-2 text-slate-500 transition w-1/3"><span class="text-2xl mb-1">🏆</span><span class="text-[10px] font-medium">Рейтинг</span></button>
-        <button onclick="switchTab('profile')" id="nav-profile" class="nav-btn flex flex-col items-center p-2 text-slate-500 transition w-1/3"><span class="text-2xl mb-1">👤</span><span class="text-[10px] font-medium">Профиль</span></button>
+        <button onclick="switchTab('matches')" id="nav-matches" class="nav-btn flex flex-col items-center p-2 text-blue-500 transition w-1/4"><span class="text-2xl mb-1">⚽</span><span class="text-[10px] font-medium">Матчи</span></button>
+        <button onclick="switchTab('bracket')" id="nav-bracket" class="nav-btn flex flex-col items-center p-2 text-slate-500 transition w-1/4"><span class="text-2xl mb-1">🌳</span><span class="text-[10px] font-medium">Сетка</span></button>
+        <button onclick="switchTab('table')" id="nav-table" class="nav-btn flex flex-col items-center p-2 text-slate-500 transition w-1/4"><span class="text-2xl mb-1">🏆</span><span class="text-[10px] font-medium">Рейтинг</span></button>
+        <button onclick="switchTab('profile')" id="nav-profile" class="nav-btn flex flex-col items-center p-2 text-slate-500 transition w-1/4"><span class="text-2xl mb-1">👤</span><span class="text-[10px] font-medium">Профиль</span></button>
       </div>
     </div>
   </div>
@@ -113,7 +122,7 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2c3J4dWlicm92dW1haWtxcHRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4Nzc0NTYsImV4cCI6MjEwMDQ1MzQ1Nn0.uKkIbZi7I0Q0jL0oMMq5k4ABQ_ge18yJo7tYSB_PYRI';
     const baseHeaders = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' };
 
-    let allMatches = []; let allUsers = []; let currentRound = 'Дерево'; let editModeMatchId = null; let proposeModeMatchId = null;
+    let allMatches = []; let allUsers = []; let currentRound = 'Группы'; let editModeMatchId = null; let proposeModeMatchId = null;
     let isAdminMode = (telegramId === ADMIN_ID);
 
     if (telegramId === ADMIN_ID) {
@@ -134,10 +143,7 @@
       loadTournament();
     }
 
-    function getMyName() {
-      let me = allUsers.find(u => u.id === telegramId);
-      return me ? me.username : tgUsername;
-    }
+    function getMyName() { let me = allUsers.find(u => u.id === telegramId); return me ? me.username : tgUsername; }
 
     function generateProfileHtml(user, history) {
       let squadImg = user.current_squad_url ? `<img src="${user.current_squad_url}" class="w-full h-auto rounded-lg border border-slate-700/50 mt-2 shadow-lg">` : `<div class="text-xs text-slate-500 bg-slate-900/50 p-4 rounded-lg border border-slate-800 text-center mt-2">Состав не загружен</div>`;
@@ -163,15 +169,24 @@
       document.getElementById(`tab-${tabName}`).classList.remove('hidden'); document.getElementById(`tab-${tabName}`).classList.add('block');
       document.querySelectorAll('.nav-btn').forEach(btn => { btn.classList.remove('text-blue-500'); btn.classList.add('text-slate-500'); });
       document.getElementById(`nav-${tabName}`).classList.remove('text-slate-500'); document.getElementById(`nav-${tabName}`).classList.add('text-blue-500');
-      const titleEl = document.getElementById('page-title'); if (tabName === 'matches') titleEl.innerText = 'Сетка турнира'; if (tabName === 'table') titleEl.innerText = 'Турнирный рейтинг'; if (tabName === 'profile') titleEl.innerText = 'Профиль игрока';
+      
+      const titleEl = document.getElementById('page-title'); 
+      if (tabName === 'matches') titleEl.innerText = 'Расписание матчей'; 
+      if (tabName === 'bracket') titleEl.innerText = 'Сетка плей-офф'; 
+      if (tabName === 'table') titleEl.innerText = 'Турнирный рейтинг'; 
+      if (tabName === 'profile') titleEl.innerText = 'Профиль игрока';
     }
 
     window.setRound = function(roundName) {
       currentRound = roundName;
-      document.querySelectorAll('#round-buttons button').forEach(btn => { if (btn.id === 'btn-tree') btn.className = 'px-5 py-2.5 rounded-full text-sm font-bold bg-slate-800 text-indigo-400 transition whitespace-nowrap'; else btn.className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap'; });
-      let actId = (roundName === 'Дерево') ? 'btn-tree' : (roundName === 'Группы') ? 'btn-groups' : (roundName === '1/16 финала') ? 'btn-1-16' : (roundName === '1/8 финала') ? 'btn-1-8' : (roundName === '1/4 финала') ? 'btn-1-4' : (roundName === 'Полуфинал') ? 'btn-semi' : (roundName === 'Финал') ? 'btn-final' : '';
-      if (actId) { if (actId === 'btn-tree') document.getElementById(actId).className = 'px-5 py-2.5 rounded-full text-sm font-bold bg-indigo-600 text-white transition whitespace-nowrap shadow-lg shadow-indigo-500/30 border border-indigo-400/50'; else document.getElementById(actId).className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-blue-500 text-white transition whitespace-nowrap'; }
-      if (roundName === 'Дерево') { document.getElementById('db-matches').classList.add('hidden'); document.getElementById('db-bracket').classList.remove('hidden'); renderBracket(); } else { document.getElementById('db-matches').classList.remove('hidden'); document.getElementById('db-bracket').classList.add('hidden'); editModeMatchId = null; proposeModeMatchId = null; renderMatches(); }
+      document.querySelectorAll('#round-buttons button').forEach(btn => { 
+        btn.className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap'; 
+      });
+      let actId = (roundName === 'Группы') ? 'btn-groups' : (roundName === '1/16 финала') ? 'btn-1-16' : (roundName === '1/8 финала') ? 'btn-1-8' : (roundName === '1/4 финала') ? 'btn-1-4' : (roundName === 'Полуфинал') ? 'btn-semi' : (roundName === 'Финал') ? 'btn-final' : '';
+      if (actId) { 
+        document.getElementById(actId).className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-blue-500 text-white transition whitespace-nowrap shadow-lg shadow-blue-500/30'; 
+      }
+      editModeMatchId = null; proposeModeMatchId = null; renderMatches();
     }
 
     function renderBracket() {
@@ -345,7 +360,7 @@
         }
       }
       alert('Генерируем сетку плей-офф... Пожалуйста, подождите.'); await Promise.all(promises);
-      alert(`Сетка ${rName} сформирована (крест-накрест)!`); setRound('Дерево'); window.switchTab('matches'); await loadTournament();
+      alert(`Сетка ${rName} сформирована!`); window.switchTab('bracket'); await loadTournament();
     }
 
     window.finishTournament = async function() {
@@ -393,7 +408,8 @@
       document.getElementById('btn-1-8').classList.toggle('hidden', !s8);
       document.getElementById('btn-1-4').classList.toggle('hidden', !s4);
 
-      if (currentRound === 'Дерево') renderBracket(); else renderMatches();
+      renderBracket();
+      renderMatches();
     }
     
     loadTournament();
