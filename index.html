@@ -62,10 +62,17 @@
         </div>
       </div>
 
-      <!-- ВКЛАДКА 3: НАСТРОЙКИ -->
+      <!-- ВКЛАДКА 3: ПРОФИЛЬ И НАСТРОЙКИ -->
       <div id="tab-profile" class="tab-content hidden space-y-6">
+        
+        <!-- КАРТОЧКА ПРОФИЛЯ, СОСТАВОВ И ИСТОРИИ (генерируется в JS) -->
+        <div id="profile-content" class="bg-slate-800 rounded-2xl p-5 border border-slate-700/50 shadow-sm">
+          <div class="text-center py-4 animate-pulse">Загрузка профиля...</div>
+        </div>
+
+        <!-- НАСТРОЙКИ АККАУНТА -->
         <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700/50 shadow-sm space-y-3">
-          <h2 class="text-sm font-bold text-slate-200 mb-2">Твой профиль</h2>
+          <h2 class="text-sm font-bold text-slate-200 mb-2">⚙️ Настройки аккаунта</h2>
           <div>
             <p class="text-[10px] uppercase text-slate-400 font-bold mb-1">Отображаемое имя</p>
             <input id="profile-nickname" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm">
@@ -83,6 +90,7 @@
           </button>
         </div>
 
+        <!-- ПАНЕЛЬ АДМИНИСТРАТОРА -->
         <div id="admin-panel" class="hidden bg-slate-800/80 border border-blue-500/40 rounded-2xl p-5 shadow-lg relative overflow-hidden">
           <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-purple-600"></div>
           <h2 class="text-sm font-bold text-blue-400 mb-4 flex items-center">👑 Панель организатора</h2>
@@ -94,6 +102,9 @@
             </button>
             <button onclick="startPlayoffs()" class="w-full bg-purple-600 hover:bg-purple-500 py-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center">
               <span class="mr-2">🚀</span> Запустить Плей-офф
+            </button>
+            <button onclick="finishTournament()" class="w-full bg-red-600/80 hover:bg-red-500 py-2 mt-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center">
+              <span class="mr-2">📦</span> Завершить турнир и сохранить в Архив
             </button>
           </div>
           
@@ -132,8 +143,8 @@
           <span class="text-[10px] font-medium">Рейтинг</span>
         </button>
         <button onclick="switchTab('profile')" id="nav-profile" class="nav-btn flex flex-col items-center p-2 text-slate-500 transition w-1/3">
-          <span class="text-2xl mb-1">⚙️</span>
-          <span class="text-[10px] font-medium">Настройки</span>
+          <span class="text-2xl mb-1">👤</span>
+          <span class="text-[10px] font-medium">Профиль</span>
         </button>
       </div>
     </div>
@@ -168,6 +179,66 @@
       document.getElementById('admin-panel').classList.remove('hidden');
     }
 
+    // ----- ОТРИСОВКА ПРОФИЛЯ -----
+    function renderProfile(me, history) {
+      let squadImg = me.current_squad_url 
+        ? `<img src="${me.current_squad_url}" class="w-full h-auto rounded-lg border border-slate-700/50 mt-2 shadow-lg">`
+        : `<div class="text-xs text-slate-500 bg-slate-900/50 p-4 rounded-lg border border-slate-800 text-center mt-2">Состав не загружен (Отправь фото боту)</div>`;
+
+      let historyHtml = '';
+      if (history && history.length > 0) {
+        historyHtml = history.map(h => `
+          <div class="bg-slate-900/70 p-4 rounded-xl border border-slate-700/50 mb-3 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+            <div class="font-bold text-sm text-blue-400 mb-2 pl-2">${h.tournament_name || 'Архивный турнир'}</div>
+            <div class="grid grid-cols-3 gap-2 text-center text-xs bg-slate-900 p-2 rounded-lg text-slate-400 mb-3">
+              <div>Поб: <span class="text-white font-bold">${h.wins} / ${h.losses}</span></div>
+              <div>Голы: <span class="text-white font-bold">${h.goals_for}:${h.goals_against}</span></div>
+              <div>Очки: <span class="text-blue-400 font-bold">${h.wins * 3}</span></div>
+            </div>
+            ${h.squad_url ? `<div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Состав на турнире:</div><img src="${h.squad_url}" class="w-full h-auto rounded-lg border border-slate-800">` : ''}
+          </div>
+        `).join('');
+      } else {
+        historyHtml = `<div class="text-xs text-slate-500 text-center py-4 bg-slate-900/50 rounded-xl border border-slate-800">Завершенных турниров пока нет.</div>`;
+      }
+
+      document.getElementById('profile-content').innerHTML = `
+        <div class="flex items-center space-x-4 mb-5 pb-5 border-b border-slate-700/50">
+          <div class="w-16 h-16 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-2xl font-bold shadow-lg border-2 border-slate-800">
+            ${me.username ? me.username.charAt(0).toUpperCase() : 'U'}
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-white leading-tight">${me.username}</h2>
+            <div class="inline-block mt-1 px-2 py-0.5 bg-blue-900/50 border border-blue-500/30 rounded text-xs text-blue-400 font-semibold">${me.platform}</div>
+          </div>
+        </div>
+        
+        <div class="mb-6">
+          <h3 class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-2">Статистика текущего турнира</h3>
+          <div class="grid grid-cols-4 gap-2 text-center bg-slate-900/80 p-3 rounded-xl border border-slate-700/50 shadow-inner">
+            <div><div class="text-[10px] text-slate-500 uppercase">Очки</div><div class="font-bold text-blue-400 text-lg">${(me.wins || 0) * 3}</div></div>
+            <div><div class="text-[10px] text-slate-500 uppercase">Поб</div><div class="font-bold text-white text-lg">${me.wins || 0}</div></div>
+            <div><div class="text-[10px] text-slate-500 uppercase">Пор</div><div class="font-bold text-white text-lg">${me.losses || 0}</div></div>
+            <div><div class="text-[10px] text-slate-500 uppercase">Голы</div><div class="font-bold text-white text-sm mt-1">${me.goals_for || 0}:${me.goals_against || 0}</div></div>
+          </div>
+        </div>
+
+        <div class="mb-6">
+          <h3 class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-2">Актуальный состав</h3>
+          ${squadImg}
+        </div>
+
+        <div>
+          <h3 class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-3 flex items-center">
+            <span class="mr-2">🏛️</span> Зал славы (История турниров)
+          </h3>
+          ${historyHtml}
+        </div>
+      `;
+    }
+
+    // ----- ОСНОВНЫЕ ФУНКЦИИ -----
     window.saveProfile = async function() {
       const newName = document.getElementById('profile-nickname').value.trim();
       const newPlat = document.getElementById('profile-platform').value;
@@ -176,7 +247,7 @@
       await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${telegramId}`, {
         method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ username: newName, platform: newPlat })
       });
-      alert('Профиль обновлен!');
+      alert('Настройки профиля обновлены!');
       await loadTournament();
     }
 
@@ -191,7 +262,7 @@
       const titleEl = document.getElementById('page-title');
       if (tabName === 'matches') titleEl.innerText = 'Сетка турнира';
       if (tabName === 'table') titleEl.innerText = 'Турнирный рейтинг';
-      if (tabName === 'profile') titleEl.innerText = 'Настройки';
+      if (tabName === 'profile') titleEl.innerText = 'Профиль игрока';
     }
 
     window.setRound = function(roundName) {
@@ -406,7 +477,6 @@
       await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ score1: s1, score2: s2 }) });
       await loadTournament();
     }
-
     window.resetScore = async function(matchId, p1, p2) { window.changeScore(matchId, 0, 0, p1, p2); }
 
     window.finishMatch = async function(matchId, p1Name, p2Name, s1, s2) {
@@ -443,10 +513,7 @@
       if (!confirm(`Система перемешает игроков заново и закроет прием составов. Продолжить?`)) return;
 
       let playoffSpots = 4;
-      if (n >= 32) playoffSpots = 32;
-      else if (n >= 16) playoffSpots = 16;
-      else if (n >= 8) playoffSpots = 8;
-
+      if (n >= 32) playoffSpots = 32; else if (n >= 16) playoffSpots = 16; else if (n >= 8) playoffSpots = 8;
       let groupCount = playoffSpots / 2;
       let shuffled = [...players].sort(() => 0.5 - Math.random());
       let newGroups = Array.from({length: groupCount}, () => []);
@@ -484,34 +551,57 @@
       if (gCount === 0) { alert('Группы не найдены!'); return; }
 
       let roundName = 'Полуфинал';
-      if (gCount === 4) roundName = '1/4 финала';
-      else if (gCount === 8) roundName = '1/8 финала';
-      else if (gCount === 16) roundName = '1/16 финала';
+      if (gCount === 4) roundName = '1/4 финала'; else if (gCount === 8) roundName = '1/8 финала'; else if (gCount === 16) roundName = '1/16 финала';
 
-      let matchesCreated = 0;
       for (let i = 0; i < gCount; i += 2) {
-        let g1Name = validGroupNames[i];
-        let g2Name = validGroupNames[i+1];
+        let g1Name = validGroupNames[i]; let g2Name = validGroupNames[i+1];
         if (!g1Name || !g2Name) continue;
-
         let u1_1 = groupedUsers[g1Name][0]; let u1_2 = groupedUsers[g1Name][1]; 
         let u2_1 = groupedUsers[g2Name][0]; let u2_2 = groupedUsers[g2Name][1]; 
 
-        if (u1_1 && u2_2) {
-          await fetch(`${SUPABASE_URL}/rest/v1/matches`, {
-            method: 'POST', headers: baseHeaders, body: JSON.stringify({ player1: u1_1.username, player2: u2_2.username, score1: 0, score2: 0, round: roundName, is_completed: false })
-          });
-          matchesCreated++;
-        }
-        if (u2_1 && u1_2) {
-          await fetch(`${SUPABASE_URL}/rest/v1/matches`, {
-            method: 'POST', headers: baseHeaders, body: JSON.stringify({ player1: u2_1.username, player2: u1_2.username, score1: 0, score2: 0, round: roundName, is_completed: false })
-          });
-          matchesCreated++;
-        }
+        if (u1_1 && u2_2) await fetch(`${SUPABASE_URL}/rest/v1/matches`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ player1: u1_1.username, player2: u2_2.username, score1: 0, score2: 0, round: roundName, is_completed: false }) });
+        if (u2_1 && u1_2) await fetch(`${SUPABASE_URL}/rest/v1/matches`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ player1: u2_1.username, player2: u1_2.username, score1: 0, score2: 0, round: roundName, is_completed: false }) });
       }
       alert(`Сетка плей-офф сформирована!`);
-      setRound('Дерево'); window.switchTab('matches');
+      setRound('Дерево'); window.switchTab('matches'); await loadTournament();
+    }
+
+    // --- КНОПКА ЗАВЕРШЕНИЯ ТУРНИРА (АДМИН) ---
+    window.finishTournament = async function() {
+      let tName = prompt("Введите название завершенного турнира (например, 'Летний Кубок 2026'):");
+      if (!tName) return;
+      if (!confirm("⚠️ Вы абсолютно уверены? Это сохранит статистику игроков в архив и полностью ОБНУЛИТ текущую турнирную таблицу и сетку для нового сезона!")) return;
+
+      alert("Сохраняем историю в базу... Пожалуйста, подождите (это может занять около 10 секунд).");
+      
+      // 1. Сохраняем статистику тех, кто играл
+      for (let u of allUsers) {
+        if ((u.wins > 0 || u.losses > 0 || u.goals_for > 0 || u.goals_against > 0) || u.current_squad_url) {
+          await fetch(`${SUPABASE_URL}/rest/v1/player_history`, {
+            method: 'POST', headers: baseHeaders,
+            body: JSON.stringify({
+              user_id: u.id, tournament_name: tName, wins: u.wins, losses: u.losses,
+              goals_for: u.goals_for, goals_against: u.goals_against, squad_url: u.current_squad_url
+            })
+          });
+        }
+        
+        // 2. Обнуляем таблицу users
+        await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${u.id}`, {
+          method: 'PATCH', headers: baseHeaders,
+          body: JSON.stringify({
+            wins: 0, losses: 0, goals_for: 0, goals_against: 0,
+            group_name: 'Без группы', can_update_squad: true, current_squad_url: null
+          })
+        });
+      }
+
+      // 3. Удаляем все текущие матчи
+      for (let m of allMatches) {
+        await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${m.id}`, { method: 'DELETE', headers: baseHeaders });
+      }
+
+      alert("✅ Турнир успешно завершен! Вся статистика и составы отправлены в профили игроков.");
       await loadTournament();
     }
 
@@ -524,9 +614,7 @@
     window.changeGroup = async function(userId) {
       let newGroup = prompt('Группа:', 'Группа A');
       if (!newGroup) return;
-      await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${userId}`, {
-        method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ group_name: newGroup })
-      });
+      await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${userId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ group_name: newGroup }) });
       await loadTournament();
     }
 
@@ -548,6 +636,13 @@
       
       document.getElementById('profile-nickname').value = me.username || '';
       document.getElementById('profile-platform').value = me.platform;
+
+      // ЗАГРУЗКА ИСТОРИИ ИГРОКА ИЗ БД И ОТРИСОВКА ПРОФИЛЯ
+      try {
+        let historyRes = await fetch(`${SUPABASE_URL}/rest/v1/player_history?user_id=eq.${telegramId}&order=created_at.desc`, { headers: baseHeaders });
+        let myHistory = await historyRes.json();
+        renderProfile(me, myHistory);
+      } catch (e) { console.error("Ошибка загрузки истории", e); }
       
       allUsers.sort((a, b) => {
         let ptsA = (a.wins || 0) * 3; let ptsB = (b.wins || 0) * 3;
