@@ -15,8 +15,8 @@
       <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-indigo-500"></div>
       
       <div class="text-4xl mb-4 mt-2">🏆</div>
-      <h2 class="text-xl font-bold text-white mb-2">Регистрация в турнир</h2>
-      <p class="text-xs text-slate-400 mb-6">Заполни профиль участника, чтобы попасть в сетку и начать играть.</p>
+      <h2 class="text-xl font-bold text-white mb-2">Регистрация</h2>
+      <p class="text-xs text-slate-400 mb-6">Выбери свою платформу для участия в турнире.</p>
       
       <div class="space-y-4 text-left">
         <div>
@@ -28,15 +28,33 @@
           </select>
         </div>
         
-        <div>
-          <label class="text-[10px] uppercase text-slate-400 font-bold mb-1 block">Команда / Состав</label>
-          <input id="reg-squad" type="text" placeholder="Например: Real Madrid" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
-        </div>
-        
         <button onclick="submitRegistration(this)" class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl text-sm font-bold text-white transition mt-4 shadow-lg shadow-blue-500/30">
-          Ворваться в турнир!
+          Сохранить и войти
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- ================= ЭКРАН ОЖИДАНИЯ СКРИНШОТА ================= -->
+  <div id="screenshot-waiting-screen" class="hidden min-h-screen flex-col items-center justify-center p-4 bg-slate-900/95 backdrop-blur-sm z-50 fixed inset-0">
+    <div class="bg-slate-800 p-6 rounded-2xl border border-green-500/30 shadow-2xl w-full max-w-sm text-center relative overflow-hidden">
+      <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-400 to-emerald-500"></div>
+      
+      <div class="text-4xl mb-4 mt-2">📸</div>
+      <h2 class="text-xl font-bold text-white mb-2">Отличный старт!</h2>
+      <p class="text-sm text-slate-400 mb-6">Твоя платформа сохранена.</p>
+      
+      <div class="bg-slate-900/50 p-4 rounded-xl mb-6 text-sm text-slate-300">
+        Теперь закрой это приложение (смахни вниз) и <b>отправь скриншот своего состава</b> прямо в чат с ботом.
+      </div>
+      
+      <button onclick="Telegram.WebApp.close()" class="w-full bg-slate-700 hover:bg-slate-600 py-3 rounded-xl text-sm font-bold text-white transition shadow-lg">
+        Закрыть и отправить фото
+      </button>
+      
+      <button onclick="skipScreenshotForNow()" class="w-full mt-3 text-xs text-slate-500 hover:text-slate-300 underline underline-offset-2">
+        Я уже отправил / Отправлю позже
+      </button>
     </div>
   </div>
 
@@ -84,19 +102,13 @@
             <input id="profile-nickname" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm">
           </div>
           
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <p class="text-[10px] uppercase text-slate-400 font-bold mb-1">Платформа</p>
-              <select id="profile-platform" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm">
-                <option value="PlayStation">PlayStation</option>
-                <option value="Xbox">Xbox</option>
-                <option value="PC">PC</option>
-              </select>
-            </div>
-            <div>
-              <p class="text-[10px] uppercase text-slate-400 font-bold mb-1">Команда</p>
-              <input id="profile-squad" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm">
-            </div>
+          <div>
+            <p class="text-[10px] uppercase text-slate-400 font-bold mb-1">Платформа</p>
+            <select id="profile-platform" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm">
+              <option value="PlayStation">PlayStation</option>
+              <option value="Xbox">Xbox</option>
+              <option value="PC">PC</option>
+            </select>
           </div>
           
           <button onclick="saveProfile()" class="w-full bg-blue-600 px-4 py-2 mt-2 rounded-xl text-sm font-semibold hover:bg-blue-500 transition shadow-lg shadow-blue-500/20">
@@ -193,15 +205,9 @@
       document.getElementById('admin-panel').classList.remove('hidden');
     }
 
-    // --- ЛОГИКА РЕГИСТРАЦИИ ---
+    // --- ЛОГИКА РЕГИСТРАЦИИ И ПОДТВЕРЖДЕНИЯ ---
     window.submitRegistration = async function(btn) {
       const plat = document.getElementById('reg-platform').value;
-      const sq = document.getElementById('reg-squad').value.trim();
-      
-      if (!sq) {
-        alert('Пожалуйста, введи название команды!');
-        return;
-      }
       
       btn.innerText = 'Подготовка...';
       btn.disabled = true;
@@ -209,27 +215,38 @@
       await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${telegramId}`, {
         method: 'PATCH', 
         headers: baseHeaders, 
-        body: JSON.stringify({ platform: plat, squad: sq })
+        body: JSON.stringify({ platform: plat })
       });
       
-      await loadTournament();
+      // Скрываем форму регистрации, показываем экран с просьбой отправить скриншот
+      document.getElementById('registration-screen').classList.add('hidden');
+      document.getElementById('registration-screen').classList.remove('flex');
+      
+      document.getElementById('screenshot-waiting-screen').classList.remove('hidden');
+      document.getElementById('screenshot-waiting-screen').classList.add('flex');
     }
 
-    // Сохранение изменений профиля
+    window.skipScreenshotForNow = function() {
+      // Игрок уже отправил скриншот или хочет сделать это позже. Запускаем приложение.
+      document.getElementById('screenshot-waiting-screen').classList.add('hidden');
+      document.getElementById('screenshot-waiting-screen').classList.remove('flex');
+      document.getElementById('main-app').classList.remove('hidden');
+      loadTournament(); // Загружаем данные
+    }
+
     window.saveProfile = async function() {
       const newName = document.getElementById('profile-nickname').value.trim();
       const newPlat = document.getElementById('profile-platform').value;
-      const newSquad = document.getElementById('profile-squad').value.trim();
       
-      if (!newName || !newSquad) {
-        alert('Имя и команда не могут быть пустыми!');
+      if (!newName) {
+        alert('Имя не может быть пустым!');
         return;
       }
       
       await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${telegramId}`, {
         method: 'PATCH', 
         headers: baseHeaders, 
-        body: JSON.stringify({ username: newName, platform: newPlat, squad: newSquad })
+        body: JSON.stringify({ username: newName, platform: newPlat })
       });
       
       alert('Профиль успешно обновлен!');
@@ -767,22 +784,35 @@
         me = allUsers.find(u => u.id === telegramId);
       }
 
-      // ===== ЛОГИКА ЭКРАНА РЕГИСТРАЦИИ =====
-      if (!me.platform || !me.squad) {
+      // ===== ОБНОВЛЕННАЯ ЛОГИКА: Регистрация -> Заглушка -> Приложение =====
+      
+      // Если вообще не выбрана платформа -> Экран Регистрации
+      if (!me.platform) {
         document.getElementById('registration-screen').classList.remove('hidden');
         document.getElementById('registration-screen').classList.add('flex');
+        
+        document.getElementById('screenshot-waiting-screen').classList.add('hidden');
+        document.getElementById('screenshot-waiting-screen').classList.remove('flex');
+        
         document.getElementById('main-app').classList.add('hidden');
         return; 
-      } else {
-        document.getElementById('registration-screen').classList.add('hidden');
-        document.getElementById('registration-screen').classList.remove('flex');
-        document.getElementById('main-app').classList.remove('hidden');
       }
       
+      // Если все нормально -> Запускаем основное приложение
+      document.getElementById('registration-screen').classList.add('hidden');
+      document.getElementById('registration-screen').classList.remove('flex');
+      
+      document.getElementById('screenshot-waiting-screen').classList.add('hidden');
+      document.getElementById('screenshot-waiting-screen').classList.remove('flex');
+      
+      document.getElementById('main-app').classList.remove('hidden');
+      
+      
+      // Заполняем настройки профиля
       document.getElementById('profile-nickname').value = me.username || '';
       document.getElementById('profile-platform').value = me.platform || 'PlayStation';
-      document.getElementById('profile-squad').value = me.squad || '';
       
+      // Сортировка и группировка
       allUsers.sort((a, b) => {
         let ptsA = (a.wins || 0) * 3; 
         let ptsB = (b.wins || 0) * 3;
@@ -813,7 +843,7 @@
                   <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 text-blue-400 text-sm flex-shrink-0">${medal}</div>
                   <div class="flex flex-col text-left truncate">
                     <span class="font-bold text-slate-200 text-sm leading-tight truncate">${user.username || 'Аноним'}</span>
-                    <span class="text-[10px] text-slate-400 mt-0.5 truncate">${platIcon} • ${user.squad || 'Свободный агент'}</span>
+                    <span class="text-[10px] text-slate-400 mt-0.5 truncate">${platIcon}</span>
                   </div>
                 </div>
                 ${(telegramId === ADMIN_ID) ? `
