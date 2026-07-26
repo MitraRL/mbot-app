@@ -9,110 +9,156 @@
 </head>
 <body class="bg-slate-900 text-white font-sans antialiased min-h-screen">
   
-  <div class="max-w-md mx-auto p-4 pb-24">
-    
-    <h1 class="text-xl font-bold text-center mt-2 mb-6 text-slate-100 uppercase tracking-wider" id="page-title">
-      Сетка турнира
-    </h1>
-
-    <!-- ================= ВКЛАДКА 1: МАТЧИ ================= -->
-    <div id="tab-matches" class="tab-content block">
+  <!-- ================= ЭКРАН РЕГИСТРАЦИИ ================= -->
+  <div id="registration-screen" class="hidden min-h-screen flex-col items-center justify-center p-4 bg-slate-900/95 backdrop-blur-sm z-50 fixed inset-0">
+    <div class="bg-slate-800 p-6 rounded-2xl border border-blue-500/30 shadow-2xl w-full max-w-sm text-center relative overflow-hidden">
+      <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-indigo-500"></div>
       
-      <!-- Фильтры раундов -->
-      <div class="flex overflow-x-auto space-x-2 pb-2 mb-4 scrollbar-hide" id="round-buttons">
-        <button onclick="setRound('Дерево')" id="btn-tree" class="px-5 py-2.5 rounded-full text-sm font-bold bg-indigo-600 text-white transition whitespace-nowrap shadow-lg shadow-indigo-500/30 border border-indigo-400/50">🌳 Сетка</button>
-        <button onclick="setRound('Группы')" id="btn-groups" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-blue-500 text-white transition whitespace-nowrap">Группы</button>
-        <button onclick="setRound('1/16 финала')" id="btn-1-16" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap">1/16</button>
-        <button onclick="setRound('1/8 финала')" id="btn-1-8" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap">1/8</button>
-        <button onclick="setRound('1/4 финала')" id="btn-1-4" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap">1/4</button>
-        <button onclick="setRound('Полуфинал')" id="btn-semi" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap">1/2</button>
-        <button onclick="setRound('Финал')" id="btn-final" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap">Финал</button>
-      </div>
+      <div class="text-4xl mb-4 mt-2">🏆</div>
+      <h2 class="text-xl font-bold text-white mb-2">Регистрация в турнир</h2>
+      <p class="text-xs text-slate-400 mb-6">Заполни профиль участника, чтобы попасть в сетку и начать играть.</p>
       
-      <!-- Стандартный список матчей -->
-      <div id="db-matches" class="space-y-4">
-        <div class="text-center py-4 text-slate-500 text-sm animate-pulse">Загрузка матчей...</div>
-      </div>
-
-      <!-- ВИЗУАЛЬНОЕ ДЕРЕВО ПЛЕЙ-ОФФ (Скрыто по умолчанию) -->
-      <div id="db-bracket" class="hidden overflow-x-auto pb-6 pt-2 scrollbar-hide">
-        <!-- Сюда JS вставит структуру дерева -->
-      </div>
-      
-    </div>
-
-    <!-- ================= ВКЛАДКА 2: РЕЙТИНГ (ГРУППЫ) ================= -->
-    <div id="tab-table" class="tab-content hidden">
-      <div id="db-players" class="space-y-6 text-slate-300">
-        <div class="text-center py-4 animate-pulse">Загрузка рейтинга...</div>
-      </div>
-    </div>
-
-    <!-- ================= ВКЛАДКА 3: НАСТРОЙКИ И АДМИНКА ================= -->
-    <div id="tab-profile" class="tab-content hidden space-y-6">
-      
-      <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700/50 shadow-sm">
-        <h2 class="text-sm font-bold text-slate-200 mb-4">Твой профиль</h2>
-        <div class="flex space-x-2">
-          <input id="nickname-input" type="text" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm" placeholder="Никнейм">
-          <button onclick="saveNickname()" id="save-btn" class="bg-blue-600 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-blue-500 transition">Сохранить</button>
-        </div>
-      </div>
-
-      <div id="admin-panel" class="hidden bg-slate-800/80 border border-blue-500/40 rounded-2xl p-5 shadow-lg relative overflow-hidden">
-        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-purple-600"></div>
-        <h2 class="text-sm font-bold text-blue-400 mb-4 flex items-center">👑 Панель организатора</h2>
-        
-        <div class="bg-slate-900/50 p-3 rounded-xl border border-blue-500/20 mb-4 space-y-2">
-          <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-2">Автоматизация турнира</p>
-          <button onclick="autoDrawGroups()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center">
-            <span class="mr-2">🎲</span> Сформировать группы
-          </button>
-          <button onclick="startPlayoffs()" class="w-full bg-purple-600 hover:bg-purple-500 py-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center">
-            <span class="mr-2">🚀</span> Запустить Плей-офф
-          </button>
-        </div>
-        
-        <div class="space-y-3 pt-3 border-t border-slate-700/50">
-          <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Ручное создание матча</p>
-          <div class="grid grid-cols-2 gap-2">
-            <input id="new-p1" type="text" placeholder="Игрок 1" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
-            <input id="new-p2" type="text" placeholder="Игрок 2" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
-          </div>
-          <select id="new-round" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
-            <option value="Группы">Групповой этап</option>
-            <option value="1/16 финала">1/16 финала</option>
-            <option value="1/8 финала">1/8 финала</option>
-            <option value="1/4 финала">1/4 финала</option>
-            <option value="Полуфинал">Полуфинал</option>
-            <option value="Финал">Финал</option>
+      <div class="space-y-4 text-left">
+        <div>
+          <label class="text-[10px] uppercase text-slate-400 font-bold mb-1 block">Игровая платформа</label>
+          <select id="reg-platform" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
+            <option value="PlayStation">PlayStation</option>
+            <option value="Xbox">Xbox</option>
+            <option value="PC">PC</option>
           </select>
-          <button onclick="createMatch()" class="w-full bg-blue-600 hover:bg-blue-500 py-2.5 rounded-xl text-xs font-bold text-white transition">
-            Создать матч вручную
-          </button>
         </div>
+        
+        <div>
+          <label class="text-[10px] uppercase text-slate-400 font-bold mb-1 block">Команда / Состав</label>
+          <input id="reg-squad" type="text" placeholder="Например: Real Madrid" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500">
+        </div>
+        
+        <button onclick="submitRegistration(this)" class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl text-sm font-bold text-white transition mt-4 shadow-lg shadow-blue-500/30">
+          Ворваться в турнир!
+        </button>
       </div>
     </div>
-
   </div>
 
-  <!-- НИЖНЕЕ НАВИГАЦИОННОЕ МЕНЮ -->
-  <div class="fixed bottom-0 left-0 w-full bg-slate-900/95 backdrop-blur-md border-t border-slate-800 z-50">
-    <div class="max-w-md mx-auto flex justify-around p-2 pb-safe">
-      <button onclick="switchTab('matches')" id="nav-matches" class="nav-btn flex flex-col items-center p-2 text-blue-500 transition w-1/3">
-        <span class="text-2xl mb-1">⚽</span>
-        <span class="text-[10px] font-medium">Матчи</span>
-      </button>
-      <button onclick="switchTab('table')" id="nav-table" class="nav-btn flex flex-col items-center p-2 text-slate-500 transition w-1/3">
-        <span class="text-2xl mb-1">🏆</span>
-        <span class="text-[10px] font-medium">Рейтинг</span>
-      </button>
-      <button onclick="switchTab('profile')" id="nav-profile" class="nav-btn flex flex-col items-center p-2 text-slate-500 transition w-1/3">
-        <span class="text-2xl mb-1">⚙️</span>
-        <span class="text-[10px] font-medium">Настройки</span>
-      </button>
+  <!-- ================= ОСНОВНОЕ ПРИЛОЖЕНИЕ ================= -->
+  <div id="main-app" class="hidden">
+    
+    <div class="max-w-md mx-auto p-4 pb-24">
+      
+      <h1 class="text-xl font-bold text-center mt-2 mb-6 text-slate-100 uppercase tracking-wider" id="page-title">
+        Сетка турнира
+      </h1>
+
+      <!-- ВКЛАДКА 1: МАТЧИ -->
+      <div id="tab-matches" class="tab-content block">
+        <div class="flex overflow-x-auto space-x-2 pb-2 mb-4 scrollbar-hide" id="round-buttons">
+          <button onclick="setRound('Дерево')" id="btn-tree" class="px-5 py-2.5 rounded-full text-sm font-bold bg-indigo-600 text-white transition whitespace-nowrap shadow-lg shadow-indigo-500/30 border border-indigo-400/50">🌳 Сетка</button>
+          <button onclick="setRound('Группы')" id="btn-groups" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap">Группы</button>
+          <button onclick="setRound('1/16 финала')" id="btn-1-16" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap">1/16</button>
+          <button onclick="setRound('1/8 финала')" id="btn-1-8" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap">1/8</button>
+          <button onclick="setRound('1/4 финала')" id="btn-1-4" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap">1/4</button>
+          <button onclick="setRound('Полуфинал')" id="btn-semi" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap">1/2</button>
+          <button onclick="setRound('Финал')" id="btn-final" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap">Финал</button>
+        </div>
+        
+        <div id="db-matches" class="space-y-4"></div>
+        
+        <div id="db-bracket" class="hidden overflow-x-auto pb-6 pt-2 scrollbar-hide"></div>
+      </div>
+
+      <!-- ВКЛАДКА 2: РЕЙТИНГ -->
+      <div id="tab-table" class="tab-content hidden">
+        <div id="db-players" class="space-y-6 text-slate-300">
+          <div class="text-center py-4 animate-pulse">Загрузка рейтинга...</div>
+        </div>
+      </div>
+
+      <!-- ВКЛАДКА 3: НАСТРОЙКИ -->
+      <div id="tab-profile" class="tab-content hidden space-y-6">
+        
+        <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700/50 shadow-sm space-y-3">
+          <h2 class="text-sm font-bold text-slate-200 mb-2">Твой профиль</h2>
+          
+          <div>
+            <p class="text-[10px] uppercase text-slate-400 font-bold mb-1">Отображаемое имя</p>
+            <input id="profile-nickname" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm">
+          </div>
+          
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <p class="text-[10px] uppercase text-slate-400 font-bold mb-1">Платформа</p>
+              <select id="profile-platform" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm">
+                <option value="PlayStation">PlayStation</option>
+                <option value="Xbox">Xbox</option>
+                <option value="PC">PC</option>
+              </select>
+            </div>
+            <div>
+              <p class="text-[10px] uppercase text-slate-400 font-bold mb-1">Команда</p>
+              <input id="profile-squad" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm">
+            </div>
+          </div>
+          
+          <button onclick="saveProfile()" class="w-full bg-blue-600 px-4 py-2 mt-2 rounded-xl text-sm font-semibold hover:bg-blue-500 transition shadow-lg shadow-blue-500/20">
+            Сохранить изменения
+          </button>
+        </div>
+
+        <div id="admin-panel" class="hidden bg-slate-800/80 border border-blue-500/40 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+          <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-purple-600"></div>
+          <h2 class="text-sm font-bold text-blue-400 mb-4 flex items-center">👑 Панель организатора</h2>
+          
+          <div class="bg-slate-900/50 p-3 rounded-xl border border-blue-500/20 mb-4 space-y-2">
+            <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-2">Автоматизация турнира</p>
+            <button onclick="autoDrawGroups()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center">
+              <span class="mr-2">🎲</span> Сформировать группы
+            </button>
+            <button onclick="startPlayoffs()" class="w-full bg-purple-600 hover:bg-purple-500 py-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center">
+              <span class="mr-2">🚀</span> Запустить Плей-офф
+            </button>
+          </div>
+          
+          <div class="space-y-3 pt-3 border-t border-slate-700/50">
+            <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Ручное создание матча</p>
+            <div class="grid grid-cols-2 gap-2">
+              <input id="new-p1" type="text" placeholder="Игрок 1" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+              <input id="new-p2" type="text" placeholder="Игрок 2" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+            </div>
+            <select id="new-round" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+              <option value="Группы">Групповой этап</option>
+              <option value="1/16 финала">1/16 финала</option>
+              <option value="1/8 финала">1/8 финала</option>
+              <option value="1/4 финала">1/4 финала</option>
+              <option value="Полуфинал">Полуфинал</option>
+              <option value="Финал">Финал</option>
+            </select>
+            <button onclick="createMatch()" class="w-full bg-blue-600 hover:bg-blue-500 py-2.5 rounded-xl text-xs font-bold text-white transition">
+              Создать матч вручную
+            </button>
+          </div>
+        </div>
+      </div>
+
     </div>
-  </div>
+
+    <!-- НИЖНЕЕ МЕНЮ -->
+    <div class="fixed bottom-0 left-0 w-full bg-slate-900/95 backdrop-blur-md border-t border-slate-800 z-50">
+      <div class="max-w-md mx-auto flex justify-around p-2 pb-safe">
+        <button onclick="switchTab('matches')" id="nav-matches" class="nav-btn flex flex-col items-center p-2 text-blue-500 transition w-1/3">
+          <span class="text-2xl mb-1">⚽</span>
+          <span class="text-[10px] font-medium">Матчи</span>
+        </button>
+        <button onclick="switchTab('table')" id="nav-table" class="nav-btn flex flex-col items-center p-2 text-slate-500 transition w-1/3">
+          <span class="text-2xl mb-1">🏆</span>
+          <span class="text-[10px] font-medium">Рейтинг</span>
+        </button>
+        <button onclick="switchTab('profile')" id="nav-profile" class="nav-btn flex flex-col items-center p-2 text-slate-500 transition w-1/3">
+          <span class="text-2xl mb-1">⚙️</span>
+          <span class="text-[10px] font-medium">Настройки</span>
+        </button>
+      </div>
+    </div>
+  </div> <!-- Конец main-app -->
 
   <style>
     .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0.5rem); }
@@ -132,24 +178,80 @@
     
     const SUPABASE_URL = 'https://kvsrxuibrovumaikqptk.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2c3J4dWlicm92dW1haWtxcHRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4Nzc0NTYsImV4cCI6MjEwMDQ1MzQ1Nn0.uKkIbZi7I0Q0jL0oMMq5k4ABQ_ge18yJo7tYSB_PYRI';
-    const baseHeaders = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' };
+    const baseHeaders = { 
+      'apikey': SUPABASE_KEY, 
+      'Authorization': `Bearer ${SUPABASE_KEY}`, 
+      'Content-Type': 'application/json' 
+    };
 
     let allMatches = [];
     let allUsers = [];
-    let currentRound = 'Группы'; 
+    let currentRound = 'Дерево'; 
     let editModeMatchId = null; 
 
     if (telegramId === ADMIN_ID) {
       document.getElementById('admin-panel').classList.remove('hidden');
     }
 
-    // --- НАВИГАЦИЯ МЕЖДУ ВКЛАДКАМИ ---
+    // --- ЛОГИКА РЕГИСТРАЦИИ ---
+    window.submitRegistration = async function(btn) {
+      const plat = document.getElementById('reg-platform').value;
+      const sq = document.getElementById('reg-squad').value.trim();
+      
+      if (!sq) {
+        alert('Пожалуйста, введи название команды!');
+        return;
+      }
+      
+      btn.innerText = 'Подготовка...';
+      btn.disabled = true;
+
+      await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${telegramId}`, {
+        method: 'PATCH', 
+        headers: baseHeaders, 
+        body: JSON.stringify({ platform: plat, squad: sq })
+      });
+      
+      await loadTournament();
+    }
+
+    // Сохранение изменений профиля
+    window.saveProfile = async function() {
+      const newName = document.getElementById('profile-nickname').value.trim();
+      const newPlat = document.getElementById('profile-platform').value;
+      const newSquad = document.getElementById('profile-squad').value.trim();
+      
+      if (!newName || !newSquad) {
+        alert('Имя и команда не могут быть пустыми!');
+        return;
+      }
+      
+      await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${telegramId}`, {
+        method: 'PATCH', 
+        headers: baseHeaders, 
+        body: JSON.stringify({ username: newName, platform: newPlat, squad: newSquad })
+      });
+      
+      alert('Профиль успешно обновлен!');
+      await loadTournament();
+    }
+
+
+    // --- НАВИГАЦИЯ ---
     window.switchTab = function(tabName) {
-      document.querySelectorAll('.tab-content').forEach(el => { el.classList.remove('block'); el.classList.add('hidden'); });
+      document.querySelectorAll('.tab-content').forEach(el => { 
+        el.classList.remove('block'); 
+        el.classList.add('hidden'); 
+      });
+      
       document.getElementById(`tab-${tabName}`).classList.remove('hidden');
       document.getElementById(`tab-${tabName}`).classList.add('block');
       
-      document.querySelectorAll('.nav-btn').forEach(btn => { btn.classList.remove('text-blue-500'); btn.classList.add('text-slate-500'); });
+      document.querySelectorAll('.nav-btn').forEach(btn => { 
+        btn.classList.remove('text-blue-500'); 
+        btn.classList.add('text-slate-500'); 
+      });
+      
       document.getElementById(`nav-${tabName}`).classList.remove('text-slate-500');
       document.getElementById(`nav-${tabName}`).classList.add('text-blue-500');
 
@@ -159,16 +261,14 @@
       if (tabName === 'profile') titleEl.innerText = 'Настройки';
     }
 
-    // --- ПЕРЕКЛЮЧЕНИЕ РАУНДОВ И СЕТКИ ---
     window.setRound = function(roundName) {
       currentRound = roundName;
       
-      // Сброс стилей кнопок раундов
       document.querySelectorAll('#round-buttons button').forEach(btn => {
         if (btn.id === 'btn-tree') {
-            btn.className = 'px-5 py-2.5 rounded-full text-sm font-bold bg-slate-800 text-indigo-400 transition whitespace-nowrap';
+          btn.className = 'px-5 py-2.5 rounded-full text-sm font-bold bg-slate-800 text-indigo-400 transition whitespace-nowrap';
         } else {
-            btn.className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap';
+          btn.className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap';
         }
       });
       
@@ -181,16 +281,14 @@
       else if (roundName === 'Полуфинал') actId = 'btn-semi';
       else if (roundName === 'Финал') actId = 'btn-final';
       
-      // Устанавливаем активную кнопку
       if (actId) {
         if (actId === 'btn-tree') {
-            document.getElementById(actId).className = 'px-5 py-2.5 rounded-full text-sm font-bold bg-indigo-600 text-white transition whitespace-nowrap shadow-lg shadow-indigo-500/30 border border-indigo-400/50';
+          document.getElementById(actId).className = 'px-5 py-2.5 rounded-full text-sm font-bold bg-indigo-600 text-white transition whitespace-nowrap shadow-lg shadow-indigo-500/30 border border-indigo-400/50';
         } else {
-            document.getElementById(actId).className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-blue-500 text-white transition whitespace-nowrap';
+          document.getElementById(actId).className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-blue-500 text-white transition whitespace-nowrap';
         }
       }
       
-      // Логика отображения (Сетка vs Список)
       if (roundName === 'Дерево') {
         document.getElementById('db-matches').classList.add('hidden');
         document.getElementById('db-bracket').classList.remove('hidden');
@@ -203,11 +301,10 @@
       }
     }
 
-    // --- ОТРИСОВКА ВИЗУАЛЬНОЙ СЕТКИ ПЛЕЙ-ОФФ (ДЕРЕВО) ---
+    // --- ДЕРЕВО ПЛЕЙ-ОФФ ---
     function renderBracket() {
       const container = document.getElementById('db-bracket');
       const playoffRounds = ['1/16 финала', '1/8 финала', '1/4 финала', 'Полуфинал', 'Финал'];
-      
       let html = '<div class="flex space-x-6 min-w-max px-2">';
       let hasPlayoffMatches = false;
 
@@ -227,12 +324,10 @@
             html += `
               <div class="bg-slate-800 rounded-lg border ${m.is_completed ? 'border-indigo-500/50' : 'border-slate-700'} w-48 shadow-lg flex flex-col overflow-hidden relative">
                 ${m.is_completed ? '<div class="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>' : ''}
-                
                 <div class="flex justify-between items-center p-2 border-b border-slate-700/50 bg-slate-800/80">
                   <span class="truncate w-3/4 text-xs ${p1Style} pl-2">${m.player1 || '?'}</span>
                   <span class="font-bold text-sm ${m.is_completed ? 'text-white' : 'text-slate-500'} bg-slate-900 px-2 rounded">${m.score1}</span>
                 </div>
-                
                 <div class="flex justify-between items-center p-2 bg-slate-800/80">
                   <span class="truncate w-3/4 text-xs ${p2Style} pl-2">${m.player2 || '?'}</span>
                   <span class="font-bold text-sm ${m.is_completed ? 'text-white' : 'text-slate-500'} bg-slate-900 px-2 rounded">${m.score2}</span>
@@ -243,7 +338,6 @@
           html += `</div>`;
         }
       });
-      
       html += '</div>';
 
       if (!hasPlayoffMatches) {
@@ -251,24 +345,25 @@
           <div class="flex flex-col items-center justify-center py-10 text-slate-500">
             <span class="text-4xl mb-3">🕸️</span>
             <span class="text-sm">Сетка плей-офф пока пуста.</span>
-            <span class="text-xs mt-1">Она появится здесь, когда начнутся игры на вылет.</span>
           </div>`;
-      } else {
-        container.innerHTML = html;
+      } else { 
+        container.innerHTML = html; 
       }
     }
 
-
-    // --- ОСТАЛЬНАЯ ЛОГИКА (БЕЗ ИЗМЕНЕНИЙ) ---
-
+    // --- УВЕДОМЛЕНИЯ И ОТРИСОВКА МАТЧЕЙ ---
     async function sendNotification(username, text) {
       let user = allUsers.find(u => u.username === username);
       if (user && user.id) {
-        try {
-          await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
-            method: 'POST', headers: baseHeaders, body: JSON.stringify({ telegram_id: user.id, message: text })
-          });
-        } catch(e) {}
+        try { 
+          await fetch(`${SUPABASE_URL}/rest/v1/notifications`, { 
+            method: 'POST', 
+            headers: baseHeaders, 
+            body: JSON.stringify({ telegram_id: user.id, message: text }) 
+          }); 
+        } catch(e) {
+          console.error(e);
+        }
       }
     }
 
@@ -279,10 +374,11 @@
 
       if (filteredMatches.length > 0) {
         container.innerHTML = filteredMatches.map(m => {
+          
           if (editModeMatchId === m.id) {
             return `
             <div class="bg-slate-800 rounded-2xl p-5 border border-yellow-500/50 shadow-sm">
-              <div class="text-center text-xs text-yellow-400 mb-2 font-bold">Редактирование матча</div>
+              <div class="text-center text-xs text-yellow-400 mb-2 font-bold">Редактирование</div>
               <div class="space-y-3">
                 <div class="grid grid-cols-2 gap-2">
                   <input id="edit-p1-${m.id}" type="text" value="${m.player1}" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
@@ -315,13 +411,11 @@
                 </div>
               ` : ''}
             </div>
-            
             <div class="flex justify-between items-center font-bold text-slate-200">
               <span class="w-2/5 text-right truncate pr-2">${m.player1}</span> 
               <span class="w-1/5 text-center text-blue-400 text-lg">${m.score1} : ${m.score2}</span> 
               <span class="w-2/5 text-left truncate pl-2">${m.player2}</span>
             </div>
-            
             ${isAdmin ? (m.is_completed ? `
               <div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-2">
                 <div class="text-center text-xs text-green-400 font-semibold">✅ Завершен</div>
@@ -340,31 +434,45 @@
           </div>
         `}).join('');
       } else {
-        container.innerHTML = `
-        <div class="text-center text-slate-500 text-sm bg-slate-800/50 p-4 rounded-xl border border-slate-700/30 flex flex-col items-center">
-          <span class="text-2xl mb-2">🤷‍♂️</span>
-          <span>Матчей в этом раунде пока нет.</span>
-        </div>`;
+        container.innerHTML = `<div class="text-center text-slate-500 text-sm bg-slate-800/50 p-4 rounded-xl border border-slate-700/30 flex flex-col items-center"><span class="text-2xl mb-2">🤷‍♂️</span><span>Матчей в этом раунде пока нет.</span></div>`;
       }
     }
 
-    window.editMatchMode = function(matchId) { editModeMatchId = matchId; renderMatches(); }
-    window.cancelEdit = function() { editModeMatchId = null; renderMatches(); }
+    window.editMatchMode = function(matchId) { 
+      editModeMatchId = matchId; 
+      renderMatches(); 
+    }
+    
+    window.cancelEdit = function() { 
+      editModeMatchId = null; 
+      renderMatches(); 
+    }
     
     window.saveMatchEdit = async function(matchId) {
       const p1 = document.getElementById(`edit-p1-${matchId}`).value.trim();
       const p2 = document.getElementById(`edit-p2-${matchId}`).value.trim();
       const round = document.getElementById(`edit-round-${matchId}`).value;
+      
       if (!p1 || !p2) return;
-      await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, {
-        method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ player1: p1, player2: p2, round: round })
+      
+      await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { 
+        method: 'PATCH', 
+        headers: baseHeaders, 
+        body: JSON.stringify({ player1: p1, player2: p2, round: round }) 
       });
-      editModeMatchId = null; await loadTournament();
+      
+      editModeMatchId = null; 
+      await loadTournament();
     }
 
     window.deleteMatch = async function(matchId) {
       if (!confirm('Удалить матч?')) return;
-      await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'DELETE', headers: baseHeaders });
+      
+      await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { 
+        method: 'DELETE', 
+        headers: baseHeaders 
+      });
+      
       await loadTournament();
     }
 
@@ -374,22 +482,48 @@
       let p2 = allUsers.find(u => u.username === p2Name);
 
       if (p1) {
-        let wins = p1.wins || 0; let losses = p1.losses || 0;
-        if (s1 > s2 && wins > 0) wins--; if (s1 < s2 && losses > 0) losses--;
+        let wins = p1.wins || 0; 
+        let losses = p1.losses || 0;
+        
+        if (s1 > s2 && wins > 0) wins--; 
+        if (s1 < s2 && losses > 0) losses--;
+        
         await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p1.id}`, {
-          method: 'PATCH', headers: baseHeaders,
-          body: JSON.stringify({ wins: wins, losses: losses, goals_for: Math.max(0, (p1.goals_for || 0) - s1), goals_against: Math.max(0, (p1.goals_against || 0) - s2) })
+          method: 'PATCH', 
+          headers: baseHeaders,
+          body: JSON.stringify({ 
+            wins: wins, 
+            losses: losses, 
+            goals_for: Math.max(0, (p1.goals_for || 0) - s1), 
+            goals_against: Math.max(0, (p1.goals_against || 0) - s2) 
+          })
         });
       }
       if (p2) {
-        let wins = p2.wins || 0; let losses = p2.losses || 0;
-        if (s2 > s1 && wins > 0) wins--; if (s2 < s1 && losses > 0) losses--;
+        let wins = p2.wins || 0; 
+        let losses = p2.losses || 0;
+        
+        if (s2 > s1 && wins > 0) wins--; 
+        if (s2 < s1 && losses > 0) losses--;
+        
         await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p2.id}`, {
-          method: 'PATCH', headers: baseHeaders,
-          body: JSON.stringify({ wins: wins, losses: losses, goals_for: Math.max(0, (p2.goals_for || 0) - s2), goals_against: Math.max(0, (p2.goals_against || 0) - s1) })
+          method: 'PATCH', 
+          headers: baseHeaders,
+          body: JSON.stringify({ 
+            wins: wins, 
+            losses: losses, 
+            goals_for: Math.max(0, (p2.goals_for || 0) - s2), 
+            goals_against: Math.max(0, (p2.goals_against || 0) - s1) 
+          })
         });
       }
-      await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ is_completed: false }) });
+      
+      await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { 
+        method: 'PATCH', 
+        headers: baseHeaders, 
+        body: JSON.stringify({ is_completed: false }) 
+      });
+      
       await loadTournament();
     }
 
@@ -397,56 +531,103 @@
       const p1 = document.getElementById('new-p1').value.trim();
       const p2 = document.getElementById('new-p2').value.trim();
       const round = document.getElementById('new-round').value;
+      
       if (!p1 || !p2) return;
+      
       await fetch(`${SUPABASE_URL}/rest/v1/matches`, {
-        method: 'POST', headers: baseHeaders,
+        method: 'POST', 
+        headers: baseHeaders,
         body: JSON.stringify({ player1: p1, player2: p2, score1: 0, score2: 0, round: round, is_completed: false })
       });
+      
       await sendNotification(p1, `🔥 Назначен матч!\nСтадия: ${round}\n${p1} vs ${p2}`); 
       await sendNotification(p2, `🔥 Назначен матч!\nСтадия: ${round}\n${p1} vs ${p2}`);
-      document.getElementById('new-p1').value = ''; document.getElementById('new-p2').value = '';
-      window.switchTab('matches'); await loadTournament();
-    }
-
-    window.changeScore = async function(matchId, s1, s2, p1Name, p2Name) {
-      await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ score1: s1, score2: s2 }) });
+      
+      document.getElementById('new-p1').value = ''; 
+      document.getElementById('new-p2').value = '';
+      
+      window.switchTab('matches'); 
       await loadTournament();
     }
 
-    window.resetScore = async function(matchId, p1, p2) { window.changeScore(matchId, 0, 0, p1, p2); }
+    window.changeScore = async function(matchId, s1, s2, p1Name, p2Name) {
+      await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { 
+        method: 'PATCH', 
+        headers: baseHeaders, 
+        body: JSON.stringify({ score1: s1, score2: s2 }) 
+      });
+      await loadTournament();
+    }
+
+    window.resetScore = async function(matchId, p1, p2) { 
+      window.changeScore(matchId, 0, 0, p1, p2); 
+    }
 
     window.finishMatch = async function(matchId, p1Name, p2Name, s1, s2) {
       if (!confirm('Завершить матч?')) return;
+      
       let p1 = allUsers.find(u => u.username === p1Name);
       let p2 = allUsers.find(u => u.username === p2Name);
 
       if (p1) {
-        let wins = p1.wins || 0; let losses = p1.losses || 0;
-        if (s1 > s2) wins++; if (s1 < s2) losses++;
+        let wins = p1.wins || 0; 
+        let losses = p1.losses || 0;
+        
+        if (s1 > s2) wins++; 
+        if (s1 < s2) losses++;
+        
         await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p1.id}`, {
-          method: 'PATCH', headers: baseHeaders,
-          body: JSON.stringify({ wins: wins, losses: losses, goals_for: (p1.goals_for || 0) + s1, goals_against: (p1.goals_against || 0) + s2 })
+          method: 'PATCH', 
+          headers: baseHeaders,
+          body: JSON.stringify({ 
+            wins: wins, 
+            losses: losses, 
+            goals_for: (p1.goals_for || 0) + s1, 
+            goals_against: (p1.goals_against || 0) + s2 
+          })
         });
       }
       if (p2) {
-        let wins = p2.wins || 0; let losses = p2.losses || 0;
-        if (s2 > s1) wins++; if (s2 < s1) losses++;
+        let wins = p2.wins || 0; 
+        let losses = p2.losses || 0;
+        
+        if (s2 > s1) wins++; 
+        if (s2 < s1) losses++;
+        
         await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p2.id}`, {
-          method: 'PATCH', headers: baseHeaders,
-          body: JSON.stringify({ wins: wins, losses: losses, goals_for: (p2.goals_for || 0) + s2, goals_against: (p2.goals_against || 0) + s1 })
+          method: 'PATCH', 
+          headers: baseHeaders,
+          body: JSON.stringify({ 
+            wins: wins, 
+            losses: losses, 
+            goals_for: (p2.goals_for || 0) + s2, 
+            goals_against: (p2.goals_against || 0) + s1 
+          })
         });
       }
-      await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ is_completed: true }) });
+      
+      await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { 
+        method: 'PATCH', 
+        headers: baseHeaders, 
+        body: JSON.stringify({ is_completed: true }) 
+      });
+      
       await sendNotification(p1Name, `🏁 Матч завершен! ${p1Name} [${s1} : ${s2}] ${p2Name}`); 
       await sendNotification(p2Name, `🏁 Матч завершен! ${p1Name} [${s1} : ${s2}] ${p2Name}`);
+      
       await loadTournament();
     }
 
     window.autoDrawGroups = async function() {
       const players = allUsers.filter(u => u.username !== 'Аноним');
       const n = players.length;
-      if (n < 4) { alert('Для старта турнира нужно минимум 4 участника!'); return; }
-      if (!confirm(`Найдено участников: ${n}. Система удалит старые группы и перемешает игроков заново. Продолжить?`)) return;
+      
+      if (n < 4) { 
+        alert('Для старта нужно минимум 4 участника!'); 
+        return; 
+      }
+      
+      if (!confirm(`Система перемешает игроков заново. Продолжить?`)) return;
 
       let playoffSpots = 4;
       if (n >= 32) playoffSpots = 32;
@@ -457,24 +638,30 @@
       let shuffled = [...players].sort(() => 0.5 - Math.random());
       let newGroups = Array.from({length: groupCount}, () => []);
       
-      shuffled.forEach((user, index) => { newGroups[index % groupCount].push(user); });
+      shuffled.forEach((user, index) => { 
+        newGroups[index % groupCount].push(user); 
+      });
 
       alert('Распределяем по группам... Это займет пару секунд.');
+      
       for (let i = 0; i < groupCount; i++) {
         let groupName = 'Группа ' + String.fromCharCode(65 + i);
         for (let user of newGroups[i]) {
           await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${user.id}`, {
-            method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ group_name: groupName })
+            method: 'PATCH', 
+            headers: baseHeaders, 
+            body: JSON.stringify({ group_name: groupName })
           });
         }
       }
-      alert(`Жеребьевка завершена! Создано групп: ${groupCount}. Загляни во вкладку "Рейтинг".`);
+      
+      alert(`Жеребьевка завершена!`);
       await loadTournament();
       window.switchTab('table');
     }
 
     window.startPlayoffs = async function() {
-      if (!confirm('Создать сетку плей-офф? Убедись, что все матчи в группах сыграны. Топ-2 из каждой группы попадут в сетку!')) return;
+      if (!confirm('Создать сетку плей-офф? Топ-2 из каждой группы попадут в сетку!')) return;
 
       const groupedUsers = {};
       allUsers.forEach(u => {
@@ -487,8 +674,11 @@
 
       const validGroupNames = Object.keys(groupedUsers).sort();
       const gCount = validGroupNames.length;
-
-      if (gCount === 0) { alert('Группы не найдены! Сначала проведи жеребьевку.'); return; }
+      
+      if (gCount === 0) { 
+        alert('Группы не найдены!'); 
+        return; 
+      }
 
       let roundName = 'Полуфинал';
       if (gCount === 4) roundName = '1/4 финала';
@@ -500,6 +690,7 @@
       for (let i = 0; i < gCount; i += 2) {
         let g1Name = validGroupNames[i];
         let g2Name = validGroupNames[i+1];
+        
         if (!g1Name || !g2Name) continue;
 
         let u1_1 = groupedUsers[g1Name][0]; 
@@ -509,22 +700,23 @@
 
         if (u1_1 && u2_2) {
           await fetch(`${SUPABASE_URL}/rest/v1/matches`, {
-            method: 'POST', headers: baseHeaders,
+            method: 'POST', 
+            headers: baseHeaders, 
             body: JSON.stringify({ player1: u1_1.username, player2: u2_2.username, score1: 0, score2: 0, round: roundName, is_completed: false })
           });
           matchesCreated++;
         }
-        
         if (u2_1 && u1_2) {
           await fetch(`${SUPABASE_URL}/rest/v1/matches`, {
-            method: 'POST', headers: baseHeaders,
+            method: 'POST', 
+            headers: baseHeaders, 
             body: JSON.stringify({ player1: u2_1.username, player2: u1_2.username, score1: 0, score2: 0, round: roundName, is_completed: false })
           });
           matchesCreated++;
         }
       }
-
-      alert(`Сетка плей-офф успешно сформирована! Раунд: ${roundName}. Создано матчей: ${matchesCreated}.`);
+      
+      alert(`Сетка плей-офф сформирована!`);
       setRound('Дерево'); 
       window.switchTab('matches');
       await loadTournament();
@@ -532,15 +724,21 @@
 
     window.deletePlayer = async function(userId) {
       if (!confirm('Удалить игрока?')) return;
-      await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${userId}`, { method: 'DELETE', headers: baseHeaders });
+      await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${userId}`, { 
+        method: 'DELETE', 
+        headers: baseHeaders 
+      });
       await loadTournament();
     }
 
     window.changeGroup = async function(userId) {
       let newGroup = prompt('Группа:', 'Группа A');
       if (!newGroup) return;
+      
       await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${userId}`, {
-        method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ group_name: newGroup })
+        method: 'PATCH', 
+        headers: baseHeaders, 
+        body: JSON.stringify({ group_name: newGroup })
       });
       await loadTournament();
     }
@@ -552,17 +750,42 @@
       
       if (!me) {
         await fetch(`${SUPABASE_URL}/rest/v1/users`, {
-          method: 'POST', headers: { ...baseHeaders, 'Prefer': 'resolution=merge-duplicates' },
-          body: JSON.stringify({ id: telegramId, username: tgUsername, wins: 0, losses: 0, goals_for: 0, goals_against: 0, group_name: 'Без группы' })
+          method: 'POST', 
+          headers: { ...baseHeaders, 'Prefer': 'resolution=merge-duplicates' },
+          body: JSON.stringify({ 
+            id: telegramId, 
+            username: tgUsername, 
+            wins: 0, 
+            losses: 0, 
+            goals_for: 0, 
+            goals_against: 0, 
+            group_name: 'Без группы' 
+          })
         });
         res = await fetch(`${SUPABASE_URL}/rest/v1/users?select=*`, { headers: baseHeaders });
         allUsers = await res.json();
+        me = allUsers.find(u => u.id === telegramId);
+      }
+
+      // ===== ЛОГИКА ЭКРАНА РЕГИСТРАЦИИ =====
+      if (!me.platform || !me.squad) {
+        document.getElementById('registration-screen').classList.remove('hidden');
+        document.getElementById('registration-screen').classList.add('flex');
+        document.getElementById('main-app').classList.add('hidden');
+        return; 
+      } else {
+        document.getElementById('registration-screen').classList.add('hidden');
+        document.getElementById('registration-screen').classList.remove('flex');
+        document.getElementById('main-app').classList.remove('hidden');
       }
       
-      if (me && !document.getElementById('nickname-input').value) document.getElementById('nickname-input').value = me.username;
+      document.getElementById('profile-nickname').value = me.username || '';
+      document.getElementById('profile-platform').value = me.platform || 'PlayStation';
+      document.getElementById('profile-squad').value = me.squad || '';
       
       allUsers.sort((a, b) => {
-        let ptsA = (a.wins || 0) * 3; let ptsB = (b.wins || 0) * 3;
+        let ptsA = (a.wins || 0) * 3; 
+        let ptsB = (b.wins || 0) * 3;
         if (ptsA !== ptsB) return ptsB - ptsA;
         return ((b.goals_for || 0) - (b.goals_against || 0)) - ((a.goals_for || 0) - (a.goals_against || 0));
       });
@@ -577,18 +800,24 @@
       let playersHtml = '';
       for (const [groupName, playersInGroup] of Object.entries(groupedUsers)) {
         playersHtml += `<h3 class="text-blue-400 font-bold mt-6 mb-3 px-2 border-b border-blue-900/50 pb-1">🏆 ${groupName}</h3>`;
+        
         playersHtml += playersInGroup.map((user, i) => {
           const isMe = user.id === telegramId;
           const medal = i === 0 ? '1️⃣' : i === 1 ? '2️⃣' : i === 2 ? '3️⃣' : '⚽';
+          const platIcon = user.platform === 'PlayStation' ? '🎮 PS' : (user.platform === 'Xbox' ? '❎ Xbox' : '💻 PC');
+          
           return `
             <div class="p-4 rounded-xl border shadow-sm mb-3 ${isMe ? 'border-blue-500/50 bg-blue-900/20' : 'border-slate-700/50 bg-slate-800'}">
-              <div class="flex items-center justify-between mb-2">
-                <div class="flex items-center">
-                  <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 text-blue-400 text-sm">${medal}</div>
-                  <span class="font-semibold text-slate-200">${user.username || 'Аноним'}</span>
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center overflow-hidden">
+                  <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 text-blue-400 text-sm flex-shrink-0">${medal}</div>
+                  <div class="flex flex-col text-left truncate">
+                    <span class="font-bold text-slate-200 text-sm leading-tight truncate">${user.username || 'Аноним'}</span>
+                    <span class="text-[10px] text-slate-400 mt-0.5 truncate">${platIcon} • ${user.squad || 'Свободный агент'}</span>
+                  </div>
                 </div>
                 ${(telegramId === ADMIN_ID) ? `
-                  <div class="flex space-x-2">
+                  <div class="flex space-x-2 pl-2">
                     <button onclick="changeGroup(${user.id})" class="text-blue-400/70 hover:text-blue-400 px-2 py-1 bg-slate-900 rounded text-[10px] uppercase font-bold transition">⚙️</button>
                     <button onclick="deletePlayer(${user.id})" class="text-red-400/50 hover:text-red-400 px-2 py-1 rounded text-xs transition">✕</button>
                   </div>
@@ -602,25 +831,18 @@
             </div>`;
         }).join('');
       }
+      
       document.getElementById('db-players').innerHTML = playersHtml;
 
       let matchesRes = await fetch(`${SUPABASE_URL}/rest/v1/matches?select=*`, { headers: baseHeaders });
       allMatches = await matchesRes.json();
       allMatches.sort((a, b) => (a.is_completed === b.is_completed) ? 0 : a.is_completed ? 1 : -1);
       
-      // Если мы на вкладке Дерево, перерисовываем его, иначе обычный список
       if (currentRound === 'Дерево') {
         renderBracket();
       } else {
         renderMatches();
       }
-    }
-
-    window.saveNickname = async function() {
-      const newName = document.getElementById('nickname-input').value.trim();
-      if (!newName) return;
-      await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${telegramId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ username: newName }) });
-      await loadTournament();
     }
     
     loadTournament();
