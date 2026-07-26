@@ -310,7 +310,6 @@
       alert('Генерируем матчи... Пожалуйста, подождите.'); await Promise.all(matchPromises); alert('Матчи группового этапа успешно созданы!'); setRound('Группы'); window.switchTab('matches'); await loadTournament();
     }
 
-    // НОВЫЙ АЛГОРИТМ ПЛЕЙ-ОФФ (Крест-накрест: 1А vs 2B)
     window.startPlayoffs = async function() {
       const gMatch = allMatches.filter(m => m.round === 'Группы');
       if (gMatch.length > 0) { const unfin = gMatch.filter(m => !m.is_completed); if (unfin.length > 0) { if (!confirm(`Внимание! Осталось ${unfin.length} незавершенных матчей в группах. Сетка может быть неточной. Продолжить?`)) return; } }
@@ -375,6 +374,16 @@
 
       let mRes = await fetch(`${SUPABASE_URL}/rest/v1/matches?select=*`, { headers: baseHeaders }); allMatches = await mRes.json();
       allMatches.sort((a, b) => (a.is_completed === b.is_completed) ? 0 : a.is_completed ? 1 : -1);
+      
+      // СКРЫВАЕМ ЛИШНИЕ КНОПКИ ПЛЕЙ-ОФФ
+      const vGroupsCount = Object.keys(gUsers).filter(g => g !== 'Без группы').length;
+      let s16 = allMatches.some(m => m.round === '1/16 финала') || vGroupsCount >= 16;
+      let s8 = allMatches.some(m => m.round === '1/8 финала') || vGroupsCount >= 8 || s16;
+      let s4 = allMatches.some(m => m.round === '1/4 финала') || vGroupsCount >= 4 || s8;
+      document.getElementById('btn-1-16').classList.toggle('hidden', !s16);
+      document.getElementById('btn-1-8').classList.toggle('hidden', !s8);
+      document.getElementById('btn-1-4').classList.toggle('hidden', !s4);
+
       if (currentRound === 'Дерево') renderBracket(); else renderMatches();
     }
     
