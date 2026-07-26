@@ -17,7 +17,10 @@
 
     <!-- ================= ВКЛАДКА 1: МАТЧИ ================= -->
     <div id="tab-matches" class="tab-content block">
+      
+      <!-- Фильтры раундов -->
       <div class="flex overflow-x-auto space-x-2 pb-2 mb-4 scrollbar-hide" id="round-buttons">
+        <button onclick="setRound('Дерево')" id="btn-tree" class="px-5 py-2.5 rounded-full text-sm font-bold bg-indigo-600 text-white transition whitespace-nowrap shadow-lg shadow-indigo-500/30 border border-indigo-400/50">🌳 Сетка</button>
         <button onclick="setRound('Группы')" id="btn-groups" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-blue-500 text-white transition whitespace-nowrap">Группы</button>
         <button onclick="setRound('1/16 финала')" id="btn-1-16" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap">1/16</button>
         <button onclick="setRound('1/8 финала')" id="btn-1-8" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap">1/8</button>
@@ -26,9 +29,16 @@
         <button onclick="setRound('Финал')" id="btn-final" class="px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap">Финал</button>
       </div>
       
+      <!-- Стандартный список матчей -->
       <div id="db-matches" class="space-y-4">
         <div class="text-center py-4 text-slate-500 text-sm animate-pulse">Загрузка матчей...</div>
       </div>
+
+      <!-- ВИЗУАЛЬНОЕ ДЕРЕВО ПЛЕЙ-ОФФ (Скрыто по умолчанию) -->
+      <div id="db-bracket" class="hidden overflow-x-auto pb-6 pt-2 scrollbar-hide">
+        <!-- Сюда JS вставит структуру дерева -->
+      </div>
+      
     </div>
 
     <!-- ================= ВКЛАДКА 2: РЕЙТИНГ (ГРУППЫ) ================= -->
@@ -41,7 +51,6 @@
     <!-- ================= ВКЛАДКА 3: НАСТРОЙКИ И АДМИНКА ================= -->
     <div id="tab-profile" class="tab-content hidden space-y-6">
       
-      <!-- Профиль игрока -->
       <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700/50 shadow-sm">
         <h2 class="text-sm font-bold text-slate-200 mb-4">Твой профиль</h2>
         <div class="flex space-x-2">
@@ -50,12 +59,10 @@
         </div>
       </div>
 
-      <!-- Панель администратора -->
       <div id="admin-panel" class="hidden bg-slate-800/80 border border-blue-500/40 rounded-2xl p-5 shadow-lg relative overflow-hidden">
         <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-purple-600"></div>
         <h2 class="text-sm font-bold text-blue-400 mb-4 flex items-center">👑 Панель организатора</h2>
         
-        <!-- Блок умной автоматики -->
         <div class="bg-slate-900/50 p-3 rounded-xl border border-blue-500/20 mb-4 space-y-2">
           <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-2">Автоматизация турнира</p>
           <button onclick="autoDrawGroups()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center">
@@ -66,7 +73,6 @@
           </button>
         </div>
         
-        <!-- Ручное создание матчей -->
         <div class="space-y-3 pt-3 border-t border-slate-700/50">
           <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Ручное создание матча</p>
           <div class="grid grid-cols-2 gap-2">
@@ -137,11 +143,12 @@
       document.getElementById('admin-panel').classList.remove('hidden');
     }
 
-    // --- НАВИГАЦИЯ ---
+    // --- НАВИГАЦИЯ МЕЖДУ ВКЛАДКАМИ ---
     window.switchTab = function(tabName) {
       document.querySelectorAll('.tab-content').forEach(el => { el.classList.remove('block'); el.classList.add('hidden'); });
       document.getElementById(`tab-${tabName}`).classList.remove('hidden');
       document.getElementById(`tab-${tabName}`).classList.add('block');
+      
       document.querySelectorAll('.nav-btn').forEach(btn => { btn.classList.remove('text-blue-500'); btn.classList.add('text-slate-500'); });
       document.getElementById(`nav-${tabName}`).classList.remove('text-slate-500');
       document.getElementById(`nav-${tabName}`).classList.add('text-blue-500');
@@ -152,153 +159,108 @@
       if (tabName === 'profile') titleEl.innerText = 'Настройки';
     }
 
+    // --- ПЕРЕКЛЮЧЕНИЕ РАУНДОВ И СЕТКИ ---
     window.setRound = function(roundName) {
       currentRound = roundName;
+      
+      // Сброс стилей кнопок раундов
       document.querySelectorAll('#round-buttons button').forEach(btn => {
-        btn.className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap';
+        if (btn.id === 'btn-tree') {
+            btn.className = 'px-5 py-2.5 rounded-full text-sm font-bold bg-slate-800 text-indigo-400 transition whitespace-nowrap';
+        } else {
+            btn.className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-slate-800 text-slate-400 transition whitespace-nowrap';
+        }
       });
       
       let actId = '';
-      if (roundName === 'Группы') actId = 'btn-groups';
+      if (roundName === 'Дерево') actId = 'btn-tree';
+      else if (roundName === 'Группы') actId = 'btn-groups';
       else if (roundName === '1/16 финала') actId = 'btn-1-16';
       else if (roundName === '1/8 финала') actId = 'btn-1-8';
       else if (roundName === '1/4 финала') actId = 'btn-1-4';
       else if (roundName === 'Полуфинал') actId = 'btn-semi';
       else if (roundName === 'Финал') actId = 'btn-final';
       
-      if(actId) document.getElementById(actId).className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-blue-500 text-white transition whitespace-nowrap';
-      
-      editModeMatchId = null;
-      renderMatches();
-    }
-
-
-    // --- НОВАЯ СМАРТ-ЛОГИКА: АВТО-ЖЕРЕБЬЕВКА ---
-    window.autoDrawGroups = async function() {
-      const players = allUsers.filter(u => u.username !== 'Аноним');
-      const n = players.length;
-      
-      if (n < 4) {
-        alert('Для старта турнира нужно минимум 4 участника!');
-        return;
-      }
-
-      if (!confirm(`Найдено участников: ${n}. Система удалит старые группы и перемешает игроков заново. Продолжить?`)) return;
-
-      // 1. Математика: определяем масштаб турнира
-      let playoffSpots = 4; // по умолчанию полуфинал
-      if (n >= 32) playoffSpots = 32;
-      else if (n >= 16) playoffSpots = 16;
-      else if (n >= 8) playoffSpots = 8;
-
-      let groupCount = playoffSpots / 2; // Топ-2 выходят из каждой группы
-      
-      // 2. Перемешиваем игроков случайным образом (Fisher-Yates Shuffle)
-      let shuffled = [...players].sort(() => 0.5 - Math.random());
-      
-      // 3. Создаем массивы для групп
-      let newGroups = Array.from({length: groupCount}, () => []);
-      
-      // Раздаем игроков по группам по кругу (как колоду карт)
-      shuffled.forEach((user, index) => {
-        newGroups[index % groupCount].push(user);
-      });
-
-      // 4. Отправляем обновления в базу данных
-      alert('Распределяем по группам... Это займет пару секунд.');
-      
-      for (let i = 0; i < groupCount; i++) {
-        let groupLetter = String.fromCharCode(65 + i); // 65 это 'A'
-        let groupName = 'Группа ' + groupLetter;
-        
-        for (let user of newGroups[i]) {
-          await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${user.id}`, {
-            method: 'PATCH',
-            headers: baseHeaders,
-            body: JSON.stringify({ group_name: groupName })
-          });
+      // Устанавливаем активную кнопку
+      if (actId) {
+        if (actId === 'btn-tree') {
+            document.getElementById(actId).className = 'px-5 py-2.5 rounded-full text-sm font-bold bg-indigo-600 text-white transition whitespace-nowrap shadow-lg shadow-indigo-500/30 border border-indigo-400/50';
+        } else {
+            document.getElementById(actId).className = 'px-5 py-2.5 rounded-full text-sm font-semibold bg-blue-500 text-white transition whitespace-nowrap';
         }
       }
       
-      alert(`Жеребьевка завершена! Создано групп: ${groupCount}. Загляни во вкладку "Рейтинг".`);
-      await loadTournament();
-      window.switchTab('table');
+      // Логика отображения (Сетка vs Список)
+      if (roundName === 'Дерево') {
+        document.getElementById('db-matches').classList.add('hidden');
+        document.getElementById('db-bracket').classList.remove('hidden');
+        renderBracket();
+      } else {
+        document.getElementById('db-matches').classList.remove('hidden');
+        document.getElementById('db-bracket').classList.add('hidden');
+        editModeMatchId = null;
+        renderMatches();
+      }
     }
 
+    // --- ОТРИСОВКА ВИЗУАЛЬНОЙ СЕТКИ ПЛЕЙ-ОФФ (ДЕРЕВО) ---
+    function renderBracket() {
+      const container = document.getElementById('db-bracket');
+      const playoffRounds = ['1/16 финала', '1/8 финала', '1/4 финала', 'Полуфинал', 'Финал'];
+      
+      let html = '<div class="flex space-x-6 min-w-max px-2">';
+      let hasPlayoffMatches = false;
 
-    // --- НОВАЯ СМАРТ-ЛОГИКА: ЗАПУСК ПЛЕЙ-ОФФ ---
-    window.startPlayoffs = async function() {
-      if (!confirm('Создать сетку плей-офф? Убедись, что все матчи в группах сыграны. Топ-2 из каждой группы попадут в сетку!')) return;
-
-      // Группируем игроков
-      const groupedUsers = {};
-      allUsers.forEach(u => {
-        const gName = u.group_name;
-        if (gName && gName !== 'Без группы') {
-          if(!groupedUsers[gName]) groupedUsers[gName] = [];
-          groupedUsers[gName].push(u);
+      playoffRounds.forEach(round => {
+        const matchesInRound = allMatches.filter(m => m.round === round);
+        
+        if (matchesInRound.length > 0) {
+          hasPlayoffMatches = true;
+          
+          html += `<div class="flex flex-col justify-center space-y-6 relative">`;
+          html += `<div class="text-center font-bold text-indigo-400 text-sm tracking-widest uppercase mb-2 sticky top-0 bg-slate-900 py-1 z-10">${round}</div>`;
+          
+          matchesInRound.forEach(m => {
+            let p1Style = (m.is_completed && m.score1 > m.score2) ? 'text-green-400 font-bold' : 'text-slate-200';
+            let p2Style = (m.is_completed && m.score2 > m.score1) ? 'text-green-400 font-bold' : 'text-slate-200';
+            
+            html += `
+              <div class="bg-slate-800 rounded-lg border ${m.is_completed ? 'border-indigo-500/50' : 'border-slate-700'} w-48 shadow-lg flex flex-col overflow-hidden relative">
+                ${m.is_completed ? '<div class="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>' : ''}
+                
+                <div class="flex justify-between items-center p-2 border-b border-slate-700/50 bg-slate-800/80">
+                  <span class="truncate w-3/4 text-xs ${p1Style} pl-2">${m.player1 || '?'}</span>
+                  <span class="font-bold text-sm ${m.is_completed ? 'text-white' : 'text-slate-500'} bg-slate-900 px-2 rounded">${m.score1}</span>
+                </div>
+                
+                <div class="flex justify-between items-center p-2 bg-slate-800/80">
+                  <span class="truncate w-3/4 text-xs ${p2Style} pl-2">${m.player2 || '?'}</span>
+                  <span class="font-bold text-sm ${m.is_completed ? 'text-white' : 'text-slate-500'} bg-slate-900 px-2 rounded">${m.score2}</span>
+                </div>
+              </div>
+            `;
+          });
+          html += `</div>`;
         }
       });
+      
+      html += '</div>';
 
-      // Получаем отсортированные названия групп (Группа A, Группа B...)
-      const validGroupNames = Object.keys(groupedUsers).sort();
-      const gCount = validGroupNames.length;
-
-      if (gCount === 0) {
-        alert('Группы не найдены! Сначала проведи жеребьевку.');
-        return;
+      if (!hasPlayoffMatches) {
+        container.innerHTML = `
+          <div class="flex flex-col items-center justify-center py-10 text-slate-500">
+            <span class="text-4xl mb-3">🕸️</span>
+            <span class="text-sm">Сетка плей-офф пока пуста.</span>
+            <span class="text-xs mt-1">Она появится здесь, когда начнутся игры на вылет.</span>
+          </div>`;
+      } else {
+        container.innerHTML = html;
       }
-
-      // Определяем стадию плей-офф в зависимости от количества групп
-      let roundName = 'Полуфинал'; // 2 группы
-      if (gCount === 4) roundName = '1/4 финала';
-      else if (gCount === 8) roundName = '1/8 финала';
-      else if (gCount === 16) roundName = '1/16 финала';
-
-      let matchesCreated = 0;
-
-      // Логика УЕФА: Сводим группы попарно (А с В, С с D и т.д.)
-      // 1-е место Группы 1 играет со 2-м местом Группы 2 и наоборот.
-      for (let i = 0; i < gCount; i += 2) {
-        let g1Name = validGroupNames[i];
-        let g2Name = validGroupNames[i+1];
-        
-        if (!g1Name || !g2Name) continue; // Если нечетное число групп, пропускаем последнюю
-
-        // Игроки уже отсортированы по очкам при загрузке турнира
-        let u1_1 = groupedUsers[g1Name][0]; // 1 место первой группы
-        let u1_2 = groupedUsers[g1Name][1]; // 2 место первой группы
-        
-        let u2_1 = groupedUsers[g2Name][0]; // 1 место второй группы
-        let u2_2 = groupedUsers[g2Name][1]; // 2 место второй группы
-
-        // Матч 1: (G1 Место 1) vs (G2 Место 2)
-        if (u1_1 && u2_2) {
-          await fetch(`${SUPABASE_URL}/rest/v1/matches`, {
-            method: 'POST', headers: baseHeaders,
-            body: JSON.stringify({ player1: u1_1.username, player2: u2_2.username, score1: 0, score2: 0, round: roundName, is_completed: false })
-          });
-          matchesCreated++;
-        }
-        
-        // Матч 2: (G2 Место 1) vs (G1 Место 2)
-        if (u2_1 && u1_2) {
-          await fetch(`${SUPABASE_URL}/rest/v1/matches`, {
-            method: 'POST', headers: baseHeaders,
-            body: JSON.stringify({ player1: u2_1.username, player2: u1_2.username, score1: 0, score2: 0, round: roundName, is_completed: false })
-          });
-          matchesCreated++;
-        }
-      }
-
-      alert(`Сетка плей-офф успешно сформирована! Раунд: ${roundName}. Создано матчей: ${matchesCreated}.`);
-      setRound(roundName); // Переключаем вкладку на нужный раунд
-      window.switchTab('matches');
-      await loadTournament();
     }
 
 
-    // --- ОСТАЛЬНЫЕ ФУНКЦИИ БЕЗ ИЗМЕНЕНИЙ ---
+    // --- ОСТАЛЬНАЯ ЛОГИКА (БЕЗ ИЗМЕНЕНИЙ) ---
+
     async function sendNotification(username, text) {
       let user = allUsers.find(u => u.username === username);
       if (user && user.id) {
@@ -320,7 +282,7 @@
           if (editModeMatchId === m.id) {
             return `
             <div class="bg-slate-800 rounded-2xl p-5 border border-yellow-500/50 shadow-sm">
-              <div class="text-center text-xs text-yellow-400 mb-2 font-bold">Редактирование</div>
+              <div class="text-center text-xs text-yellow-400 mb-2 font-bold">Редактирование матча</div>
               <div class="space-y-3">
                 <div class="grid grid-cols-2 gap-2">
                   <input id="edit-p1-${m.id}" type="text" value="${m.player1}" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
@@ -380,7 +342,8 @@
       } else {
         container.innerHTML = `
         <div class="text-center text-slate-500 text-sm bg-slate-800/50 p-4 rounded-xl border border-slate-700/30 flex flex-col items-center">
-          <span class="text-2xl mb-2">🤷‍♂️</span><span>Матчей в этом раунде пока нет.</span>
+          <span class="text-2xl mb-2">🤷‍♂️</span>
+          <span>Матчей в этом раунде пока нет.</span>
         </div>`;
       }
     }
@@ -479,6 +442,94 @@
       await loadTournament();
     }
 
+    window.autoDrawGroups = async function() {
+      const players = allUsers.filter(u => u.username !== 'Аноним');
+      const n = players.length;
+      if (n < 4) { alert('Для старта турнира нужно минимум 4 участника!'); return; }
+      if (!confirm(`Найдено участников: ${n}. Система удалит старые группы и перемешает игроков заново. Продолжить?`)) return;
+
+      let playoffSpots = 4;
+      if (n >= 32) playoffSpots = 32;
+      else if (n >= 16) playoffSpots = 16;
+      else if (n >= 8) playoffSpots = 8;
+
+      let groupCount = playoffSpots / 2;
+      let shuffled = [...players].sort(() => 0.5 - Math.random());
+      let newGroups = Array.from({length: groupCount}, () => []);
+      
+      shuffled.forEach((user, index) => { newGroups[index % groupCount].push(user); });
+
+      alert('Распределяем по группам... Это займет пару секунд.');
+      for (let i = 0; i < groupCount; i++) {
+        let groupName = 'Группа ' + String.fromCharCode(65 + i);
+        for (let user of newGroups[i]) {
+          await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${user.id}`, {
+            method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ group_name: groupName })
+          });
+        }
+      }
+      alert(`Жеребьевка завершена! Создано групп: ${groupCount}. Загляни во вкладку "Рейтинг".`);
+      await loadTournament();
+      window.switchTab('table');
+    }
+
+    window.startPlayoffs = async function() {
+      if (!confirm('Создать сетку плей-офф? Убедись, что все матчи в группах сыграны. Топ-2 из каждой группы попадут в сетку!')) return;
+
+      const groupedUsers = {};
+      allUsers.forEach(u => {
+        const gName = u.group_name;
+        if (gName && gName !== 'Без группы') {
+          if(!groupedUsers[gName]) groupedUsers[gName] = [];
+          groupedUsers[gName].push(u);
+        }
+      });
+
+      const validGroupNames = Object.keys(groupedUsers).sort();
+      const gCount = validGroupNames.length;
+
+      if (gCount === 0) { alert('Группы не найдены! Сначала проведи жеребьевку.'); return; }
+
+      let roundName = 'Полуфинал';
+      if (gCount === 4) roundName = '1/4 финала';
+      else if (gCount === 8) roundName = '1/8 финала';
+      else if (gCount === 16) roundName = '1/16 финала';
+
+      let matchesCreated = 0;
+
+      for (let i = 0; i < gCount; i += 2) {
+        let g1Name = validGroupNames[i];
+        let g2Name = validGroupNames[i+1];
+        if (!g1Name || !g2Name) continue;
+
+        let u1_1 = groupedUsers[g1Name][0]; 
+        let u1_2 = groupedUsers[g1Name][1]; 
+        let u2_1 = groupedUsers[g2Name][0]; 
+        let u2_2 = groupedUsers[g2Name][1]; 
+
+        if (u1_1 && u2_2) {
+          await fetch(`${SUPABASE_URL}/rest/v1/matches`, {
+            method: 'POST', headers: baseHeaders,
+            body: JSON.stringify({ player1: u1_1.username, player2: u2_2.username, score1: 0, score2: 0, round: roundName, is_completed: false })
+          });
+          matchesCreated++;
+        }
+        
+        if (u2_1 && u1_2) {
+          await fetch(`${SUPABASE_URL}/rest/v1/matches`, {
+            method: 'POST', headers: baseHeaders,
+            body: JSON.stringify({ player1: u2_1.username, player2: u1_2.username, score1: 0, score2: 0, round: roundName, is_completed: false })
+          });
+          matchesCreated++;
+        }
+      }
+
+      alert(`Сетка плей-офф успешно сформирована! Раунд: ${roundName}. Создано матчей: ${matchesCreated}.`);
+      setRound('Дерево'); 
+      window.switchTab('matches');
+      await loadTournament();
+    }
+
     window.deletePlayer = async function(userId) {
       if (!confirm('Удалить игрока?')) return;
       await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${userId}`, { method: 'DELETE', headers: baseHeaders });
@@ -556,7 +607,13 @@
       let matchesRes = await fetch(`${SUPABASE_URL}/rest/v1/matches?select=*`, { headers: baseHeaders });
       allMatches = await matchesRes.json();
       allMatches.sort((a, b) => (a.is_completed === b.is_completed) ? 0 : a.is_completed ? 1 : -1);
-      renderMatches();
+      
+      // Если мы на вкладке Дерево, перерисовываем его, иначе обычный список
+      if (currentRound === 'Дерево') {
+        renderBracket();
+      } else {
+        renderMatches();
+      }
     }
 
     window.saveNickname = async function() {
