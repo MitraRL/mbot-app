@@ -134,6 +134,11 @@
       loadTournament();
     }
 
+    function getMyName() {
+      let me = allUsers.find(u => u.id === telegramId);
+      return me ? me.username : tgUsername;
+    }
+
     function generateProfileHtml(user, history) {
       let squadImg = user.current_squad_url ? `<img src="${user.current_squad_url}" class="w-full h-auto rounded-lg border border-slate-700/50 mt-2 shadow-lg">` : `<div class="text-xs text-slate-500 bg-slate-900/50 p-4 rounded-lg border border-slate-800 text-center mt-2">Состав не загружен</div>`;
       let historyHtml = (history && history.length > 0) ? history.map(h => `<div class="bg-slate-900/70 p-4 rounded-xl border border-slate-700/50 mb-3 relative overflow-hidden"><div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div><div class="font-bold text-sm text-blue-400 mb-2 pl-2">${h.tournament_name || 'Архивный турнир'}</div><div class="grid grid-cols-3 gap-2 text-center text-xs bg-slate-900 p-2 rounded-lg text-slate-400 mb-3"><div>Поб: <span class="text-white font-bold">${h.wins} / ${h.losses}</span></div><div>Голы: <span class="text-white font-bold">${h.goals_for}:${h.goals_against}</span></div><div>Очки: <span class="text-blue-400 font-bold">${h.wins * 3}</span></div></div>${h.squad_url ? `<div class="text-[10px] text-slate-500 uppercase font-bold mb-1">Состав на турнире:</div><img src="${h.squad_url}" class="w-full h-auto rounded-lg border border-slate-800">` : ''}</div>`).join('') : `<div class="text-xs text-slate-500 text-center py-4 bg-slate-900/50 rounded-xl border border-slate-800">Завершенных турниров пока нет.</div>`;
@@ -193,10 +198,12 @@
       const container = document.getElementById('db-matches'); const filteredMatches = allMatches.filter(m => m.round === currentRound); const isAdmin = isAdminMode;
       if (filteredMatches.length === 0) { container.innerHTML = `<div class="text-center text-slate-500 text-sm bg-slate-800/50 p-4 rounded-xl border border-slate-700/30 flex flex-col items-center"><span class="text-2xl mb-2">🤷‍♂️</span><span>Матчей в этом раунде пока нет.</span></div>`; return; }
 
+      let myName = getMyName();
+
       container.innerHTML = filteredMatches.map(m => {
         if (editModeMatchId === m.id) return `<div class="bg-slate-800 rounded-2xl p-5 border border-yellow-500/50 shadow-sm"><div class="text-center text-xs text-yellow-400 mb-2 font-bold">Редактирование</div><div class="space-y-3"><div class="grid grid-cols-2 gap-2"><input id="edit-p1-${m.id}" type="text" value="${m.player1}" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"><input id="edit-p2-${m.id}" type="text" value="${m.player2}" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"></div><div class="flex space-x-2"><button onclick="saveMatchEdit(${m.id})" class="flex-1 bg-green-600 hover:bg-green-500 py-2 rounded-xl text-xs font-semibold text-white">💾</button><button onclick="cancelEdit()" class="flex-1 bg-slate-600 hover:bg-slate-500 py-2 rounded-xl text-xs font-semibold text-white">Отмена</button></div></div></div>`;
 
-        const isParticipant = (m.player1 === tgUsername || m.player2 === tgUsername);
+        const isParticipant = (m.player1 === myName || m.player2 === myName);
         let displayScore = m.is_completed ? `<span class="text-blue-400 text-lg">${m.score1} : ${m.score2}</span>` : (m.proposed_by ? `<div class="text-center flex flex-col items-center"><span class="text-yellow-400 text-lg">${m.proposed_score1} : ${m.proposed_score2}</span><span class="text-[9px] text-yellow-500/80 uppercase">Ожидает</span></div>` : `<span class="text-slate-500 text-lg">0 : 0</span>`);
         
         let playerActions = '';
@@ -205,7 +212,7 @@
             playerActions = `<div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-2"><div class="text-xs text-center text-blue-400 mb-1">Какой итоговый счет?</div><div class="flex justify-center space-x-2 items-center mb-2"><input id="prop-s1-${m.id}" type="number" min="0" class="w-14 bg-slate-900 border border-slate-600 text-center rounded-lg py-1 text-white font-bold" placeholder="0"><span class="text-slate-400 font-bold">:</span><input id="prop-s2-${m.id}" type="number" min="0" class="w-14 bg-slate-900 border border-slate-600 text-center rounded-lg py-1 text-white font-bold" placeholder="0"></div><div class="flex space-x-2"><button onclick="submitPropose(${m.id})" class="flex-1 bg-green-600 hover:bg-green-500 py-2 rounded-lg text-xs font-semibold text-white transition">Отправить</button><button onclick="cancelProposeMode()" class="flex-1 bg-slate-600 hover:bg-slate-500 py-2 rounded-lg text-xs font-semibold text-white transition">Отмена</button></div></div>`;
           } else if (!m.proposed_by) {
             playerActions = `<div class="mt-4 pt-3 border-t border-slate-700/50"><button onclick="openProposeMode(${m.id})" class="w-full bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-500/20 py-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">📝</span> Ввести итоговый счет</button></div>`;
-          } else if (m.proposed_by === tgUsername) {
+          } else if (m.proposed_by === myName) {
             playerActions = `<div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-3"><div class="text-center text-[11px] text-yellow-400 animate-pulse">Ожидаем подтверждения от соперника...</div><button onclick="rejectScore(${m.id})" class="bg-slate-700 hover:bg-slate-600 py-2 rounded-lg text-xs font-semibold text-white transition">Отменить предложение</button></div>`;
           } else {
             playerActions = `<div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-3"><div class="text-center text-[11px] text-yellow-400 font-bold">Соперник указал счет. Подтверждаешь?</div><div class="flex space-x-2"><button onclick="confirmScorePlayer(${m.id}, '${m.player1}', '${m.player2}', ${m.proposed_score1}, ${m.proposed_score2})" class="flex-1 bg-green-600 hover:bg-green-500 py-2.5 rounded-lg text-xs font-bold text-white transition shadow-lg shadow-green-500/20">✅ Да</button><button onclick="rejectScore(${m.id})" class="flex-1 bg-red-600 hover:bg-red-500 py-2.5 rounded-lg text-xs font-bold text-white transition shadow-lg shadow-red-500/20">❌ Нет</button></div></div>`;
@@ -216,8 +223,10 @@
         if (isAdmin) {
           if (m.is_completed) {
             adminActions = `<div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-2"><div class="text-center text-xs text-green-400 font-semibold">✅ Завершен</div><button onclick="rollbackMatch(${m.id}, '${m.player1}', '${m.player2}', ${m.score1}, ${m.score2})" class="bg-yellow-600/30 hover:bg-yellow-600/50 text-yellow-300 py-1.5 rounded-lg text-xs font-semibold transition">⏪ Отменить (Админ)</button></div>`;
+          } else if (m.proposed_by) {
+            adminActions = `<div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-2"><div class="text-[10px] text-yellow-500 text-center font-bold uppercase tracking-wider">Ожидает подтверждения</div><button onclick="confirmScorePlayer(${m.id}, '${m.player1}', '${m.player2}', ${m.proposed_score1}, ${m.proposed_score2})" class="bg-green-600 hover:bg-green-500 py-2 rounded-lg text-xs font-semibold text-white transition">✅ Подтвердить принудительно</button><button onclick="rejectScore(${m.id})" class="bg-slate-700 hover:bg-slate-600 py-1.5 rounded-lg text-xs font-semibold text-white transition">Отменить счет (Админ)</button></div>`;
           } else {
-            adminActions = `<div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-2"><div class="text-[10px] text-slate-500 text-center">ПАНЕЛЬ АДМИНА</div><div class="flex justify-center space-x-2"><button onclick="changeScore(${m.id}, ${m.score1 + 1}, ${m.score2}, '${m.player1}', '${m.player2}')" class="bg-slate-700 px-2 py-1 rounded text-xs">+1 к ${m.player1}</button><button onclick="changeScore(${m.id}, ${m.score1}, ${m.score2 + 1}, '${m.player1}', '${m.player2}')" class="bg-slate-700 px-2 py-1 rounded text-xs">+1 к ${m.player2}</button><button onclick="resetScore(${m.id}, '${m.player1}', '${m.player2}')" class="bg-red-900/40 text-red-300 px-2 py-1 rounded text-xs">Сброс</button></div><button onclick="finishMatch(${m.id}, '${m.player1}', '${m.player2}', ${m.score1}, ${m.score2})" class="bg-green-600/50 hover:bg-green-500/70 py-2 rounded-lg text-xs font-semibold text-white transition">🏁 Принудительно завершить</button></div>`;
+            adminActions = `<div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-2"><div class="text-[10px] text-slate-500 text-center">ПАНЕЛЬ АДМИНА</div><div class="flex justify-center space-x-2"><button onclick="changeScore(${m.id}, ${m.score1 + 1}, ${m.score2}, '${m.player1}', '${m.player2}')" class="bg-slate-700 px-2 py-1 rounded text-xs">+1 к ${m.player1}</button><button onclick="changeScore(${m.id}, ${m.score1}, ${m.score2 + 1}, '${m.player1}', '${m.player2}')" class="bg-slate-700 px-2 py-1 rounded text-xs">+1 к ${m.player2}</button><button onclick="resetScore(${m.id}, '${m.player1}', '${m.player2}')" class="bg-red-900/40 text-red-300 px-2 py-1 rounded text-xs">Сброс</button></div><button onclick="finishMatch(${m.id}, '${m.player1}', '${m.player2}', ${m.score1}, ${m.score2})" class="bg-green-600/50 hover:bg-green-500/70 py-2 rounded-lg text-xs font-semibold text-white transition">🏁 Завершить (по кнопкам)</button></div>`;
           }
         } else if (m.is_completed && !isParticipant) {
           adminActions = `<div class="mt-4 pt-3 border-t border-slate-700/50 text-center text-xs text-green-400 font-semibold">✅ Завершен</div>`;
@@ -230,10 +239,11 @@
     window.cancelProposeMode = function() { proposeModeMatchId = null; renderMatches(); }
     
     window.submitPropose = async function(matchId) {
+      let myName = getMyName();
       let s1 = document.getElementById(`prop-s1-${matchId}`).value; let s2 = document.getElementById(`prop-s2-${matchId}`).value;
       if (s1 === '' || s2 === '') return alert('Введите счет для обоих игроков!');
-      await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ proposed_score1: parseInt(s1), proposed_score2: parseInt(s2), proposed_by: tgUsername }) });
-      let m = allMatches.find(x => x.id === matchId); let opp = (m.player1 === tgUsername) ? m.player2 : m.player1;
+      await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ proposed_score1: parseInt(s1), proposed_score2: parseInt(s2), proposed_by: myName }) });
+      let m = allMatches.find(x => x.id === matchId); let opp = (m.player1 === myName) ? m.player2 : m.player1;
       await sendNotification(opp, `⚠️ Соперник ввел счет матча (${s1}:${s2}). Зайди в турнир и подтверди его!`);
       proposeModeMatchId = null; await loadTournament();
     }
@@ -375,7 +385,6 @@
       let mRes = await fetch(`${SUPABASE_URL}/rest/v1/matches?select=*`, { headers: baseHeaders }); allMatches = await mRes.json();
       allMatches.sort((a, b) => (a.is_completed === b.is_completed) ? 0 : a.is_completed ? 1 : -1);
       
-      // СКРЫВАЕМ ЛИШНИЕ КНОПКИ ПЛЕЙ-ОФФ
       const vGroupsCount = Object.keys(gUsers).filter(g => g !== 'Без группы').length;
       let s16 = allMatches.some(m => m.round === '1/16 финала') || vGroupsCount >= 16;
       let s8 = allMatches.some(m => m.round === '1/8 финала') || vGroupsCount >= 8 || s16;
