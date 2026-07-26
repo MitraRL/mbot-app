@@ -59,7 +59,6 @@
           <button onclick="saveProfile()" class="w-full bg-blue-600 px-4 py-2 mt-2 rounded-xl text-sm font-semibold hover:bg-blue-500 transition shadow-lg shadow-blue-500/20">Сохранить изменения</button>
         </div>
 
-        <!-- КНОПКА ПЕРЕКЛЮЧЕНИЯ РЕЖИМА АДМИНА -->
         <button id="admin-toggle-btn" onclick="toggleAdminMode()" class="hidden w-full bg-slate-700 hover:bg-slate-600 py-2 mt-4 rounded-xl text-xs font-bold text-white transition">👁️ Выйти из режима Админа</button>
 
         <div id="admin-panel" class="hidden bg-slate-800/80 border border-blue-500/40 rounded-2xl p-5 shadow-lg relative overflow-hidden mt-4">
@@ -126,15 +125,13 @@
       isAdminMode = !isAdminMode;
       const btn = document.getElementById('admin-toggle-btn');
       if (isAdminMode) {
-        btn.innerHTML = '👁️ Выйти из режима Админа';
-        btn.className = 'w-full bg-slate-700 hover:bg-slate-600 py-2 mt-4 rounded-xl text-xs font-bold text-white transition';
+        btn.innerHTML = '👁️ Выйти из режима Админа'; btn.className = 'w-full bg-slate-700 hover:bg-slate-600 py-2 mt-4 rounded-xl text-xs font-bold text-white transition';
         document.getElementById('admin-panel').classList.remove('hidden');
       } else {
-        btn.innerHTML = '👑 Войти в режим Админа';
-        btn.className = 'w-full bg-blue-600 hover:bg-blue-500 py-2 mt-4 rounded-xl text-xs font-bold text-white transition shadow-lg shadow-blue-500/20';
+        btn.innerHTML = '👑 Войти в режим Админа'; btn.className = 'w-full bg-blue-600 hover:bg-blue-500 py-2 mt-4 rounded-xl text-xs font-bold text-white transition shadow-lg shadow-blue-500/20';
         document.getElementById('admin-panel').classList.add('hidden');
       }
-      loadTournament(); // Перезагружаем турнир, чтобы перерисовать матчи и таблицу
+      loadTournament();
     }
 
     function generateProfileHtml(user, history) {
@@ -313,18 +310,33 @@
       alert('Генерируем матчи... Пожалуйста, подождите.'); await Promise.all(matchPromises); alert('Матчи группового этапа успешно созданы!'); setRound('Группы'); window.switchTab('matches'); await loadTournament();
     }
 
+    // НОВЫЙ АЛГОРИТМ ПЛЕЙ-ОФФ (Крест-накрест: 1А vs 2B)
     window.startPlayoffs = async function() {
-      if (!confirm('Создать сетку плей-офф? Топ-2 из каждой группы попадут в сетку!')) return;
+      const gMatch = allMatches.filter(m => m.round === 'Группы');
+      if (gMatch.length > 0) { const unfin = gMatch.filter(m => !m.is_completed); if (unfin.length > 0) { if (!confirm(`Внимание! Осталось ${unfin.length} незавершенных матчей в группах. Сетка может быть неточной. Продолжить?`)) return; } }
+      if (!confirm('Создать плей-офф? 1-е место группы сыграет со 2-м местом соседней группы!')) return;
+      
+      allUsers.sort((a, b) => { let pA = (a.wins||0)*3; let pB = (b.wins||0)*3; if (pA !== pB) return pB - pA; return ((b.goals_for||0)-(b.goals_against||0)) - ((a.goals_for||0)-(a.goals_against||0)); });
       const gUsers = {}; allUsers.forEach(u => { const g = u.group_name; if (g && g !== 'Без группы') { if(!gUsers[g]) gUsers[g] = []; gUsers[g].push(u); } });
       const vGroups = Object.keys(gUsers).sort(); const gC = vGroups.length; if (gC === 0) return alert('Группы не найдены!');
       let rName = gC === 16 ? '1/16 финала' : (gC === 8 ? '1/8 финала' : (gC === 4 ? '1/4 финала' : 'Полуфинал'));
+      
+      let promises = [];
       for (let i = 0; i < gC; i += 2) {
         let g1 = vGroups[i]; let g2 = vGroups[i+1]; if (!g1 || !g2) continue;
-        let u1_1 = gUsers[g1][0]; let u1_2 = gUsers[g1][1]; let u2_1 = gUsers[g2][0]; let u2_2 = gUsers[g2][1]; 
-        if (u1_1 && u2_2) await fetch(`${SUPABASE_URL}/rest/v1/matches`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ player1: u1_1.username, player2: u2_2.username, score1: 0, score2: 0, round: rName, is_completed: false }) });
-        if (u2_1 && u1_2) await fetch(`${SUPABASE_URL}/rest/v1/matches`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ player1: u2_1.username, player2: u1_2.username, score1: 0, score2: 0, round: rName, is_completed: false }) });
+        let p1g1 = gUsers[g1][0]; let p2g1 = gUsers[g1][1]; let p1g2 = gUsers[g2][0]; let p2g2 = gUsers[g2][1]; 
+        
+        if (p1g1 && p2g2) {
+          promises.push(fetch(`${SUPABASE_URL}/rest/v1/matches`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ player1: p1g1.username, player2: p2g2.username, score1: 0, score2: 0, round: rName, is_completed: false }) }));
+          sendNotification(p1g1.username, `🔥 Ты в плей-офф! Соперник: ${p2g2.username}`); sendNotification(p2g2.username, `🔥 Ты в плей-офф! Соперник: ${p1g1.username}`);
+        }
+        if (p1g2 && p2g1) {
+          promises.push(fetch(`${SUPABASE_URL}/rest/v1/matches`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ player1: p1g2.username, player2: p2g1.username, score1: 0, score2: 0, round: rName, is_completed: false }) }));
+          sendNotification(p1g2.username, `🔥 Ты в плей-офф! Соперник: ${p2g1.username}`); sendNotification(p2g1.username, `🔥 Ты в плей-офф! Соперник: ${p1g2.username}`);
+        }
       }
-      alert(`Сетка сформирована!`); setRound('Дерево'); window.switchTab('matches'); await loadTournament();
+      alert('Генерируем сетку плей-офф... Пожалуйста, подождите.'); await Promise.all(promises);
+      alert(`Сетка ${rName} сформирована (крест-накрест)!`); setRound('Дерево'); window.switchTab('matches'); await loadTournament();
     }
 
     window.finishTournament = async function() {
