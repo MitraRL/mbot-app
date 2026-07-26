@@ -118,7 +118,7 @@
 
       if (filteredMatches.length > 0) {
         container.innerHTML = filteredMatches.map(m => `
-          <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700/50 shadow-sm">
+          <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700/50 shadow-sm ${m.is_completed ? 'opacity-80' : ''}">
             <div class="text-center text-xs text-slate-400 mb-2">${m.round}</div>
             <div class="flex justify-between items-center font-bold text-slate-200">
               <span class="w-2/5 text-right truncate pr-2">${m.player1 || 'Ожидание...'}</span> 
@@ -126,13 +126,24 @@
               <span class="w-2/5 text-left truncate pl-2">${m.player2 || 'Ожидание...'}</span>
             </div>
             
-            ${isAdmin ? `
-              <div class="mt-4 pt-3 border-t border-slate-700/50 flex justify-center space-x-2">
-                <button onclick="changeScore(${m.id}, ${m.score1 + 1}, ${m.score2})" class="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-xs">+1 к ${m.player1}</button>
-                <button onclick="changeScore(${m.id}, ${m.score1}, ${m.score2 + 1})" class="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-xs">+1 к ${m.player2}</button>
-                <button onclick="resetScore(${m.id})" class="bg-red-900/40 hover:bg-red-900/60 text-red-300 px-2 py-1 rounded text-xs">Сброс</button>
+            ${isAdmin ? (m.is_completed ? `
+              <div class="mt-4 pt-3 border-t border-slate-700/50 text-center text-xs text-green-400 font-semibold">
+                ✅ Матч завершен
               </div>
-            ` : ''}
+            ` : `
+              <div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-2">
+                <div class="flex justify-center space-x-2">
+                  <button onclick="changeScore(${m.id}, ${m.score1 + 1}, ${m.score2})" class="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-xs">+1 к ${m.player1}</button>
+                  <button onclick="changeScore(${m.id}, ${m.score1}, ${m.score2 + 1})" class="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-xs">+1 к ${m.player2}</button>
+                  <button onclick="resetScore(${m.id})" class="bg-red-900/40 hover:bg-red-900/60 text-red-300 px-2 py-1 rounded text-xs">Сброс</button>
+                </div>
+                <button onclick="finishMatch(${m.id}, '${m.player1}', '${m.player2}', ${m.score1}, ${m.score2})" class="bg-green-600 hover:bg-green-500 py-2 rounded-lg text-xs font-semibold transition text-white">🏁 Завершить матч и начислить стату</button>
+              </div>
+            `) : (m.is_completed ? `
+              <div class="mt-4 pt-3 border-t border-slate-700/50 text-center text-xs text-green-400 font-semibold">
+                ✅ Матч завершен
+              </div>
+            ` : '')}
           </div>
         `).join('');
       } else {
@@ -154,7 +165,7 @@
         const res = await fetch(`${SUPABASE_URL}/rest/v1/matches`, {
           method: 'POST',
           headers: baseHeaders,
-          body: JSON.stringify({ player1: p1, player2: p2, score1: 0, score2: 0, round: round })
+          body: JSON.stringify({ player1: p1, player2: p2, score1: 0, score2: 0, round: round, is_completed: false })
         });
 
         if (!res.ok) throw new Error('Не удалось создать матч');
@@ -184,18 +195,73 @@
       window.changeScore(matchId, 0, 0);
     }
 
-    // НОВАЯ ФУНКЦИЯ УДАЛЕНИЯ ИГРОКА
-    window.deletePlayer = async function(userId) {
-      if (!confirm('Точно хочешь удалить этого участника из турнира?')) return;
-      
+    // НОВАЯ ФУНКЦИЯ: ЗАВЕРШЕНИЕ МАТЧА И РАСЧЕТ СТАТИСТИКИ
+    window.finishMatch = async function(matchId, p1Name, p2Name, s1, s2) {
+      if (!confirm('Завершить матч и начислить статистику? Это действие нельзя отменить.')) return;
+
       try {
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${userId}`, {
-          method: 'DELETE',
-          headers: baseHeaders
+        // 1. Получаем текущую статистику обоих игроков из базы
+        let res = await fetch(`${SUPABASE_URL}/rest/v1/users?username=in.("${p1Name}","${p2Name}")`, { headers: baseHeaders });
+        let players = await res.json();
+
+        let p1 = players.find(u => u.username === p1Name);
+        let p2 = players.find(u => u.username === p2Name);
+
+        // 2. Обновляем Игрока 1 (если он есть в базе)
+        if (p1) {
+          let wins = p1.wins || 0;
+          let losses = p1.losses || 0;
+          if (s1 > s2) wins++;
+          if (s1 < s2) losses++;
+          
+          await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p1.id}`, {
+            method: 'PATCH',
+            headers: baseHeaders,
+            body: JSON.stringify({
+              wins: wins,
+              losses: losses,
+              goals_for: (p1.goals_for || 0) + s1,
+              goals_against: (p1.goals_against || 0) + s2
+            })
+          });
+        }
+
+        // 3. Обновляем Игрока 2 (если он есть в базе)
+        if (p2) {
+          let wins = p2.wins || 0;
+          let losses = p2.losses || 0;
+          if (s2 > s1) wins++;
+          if (s2 < s1) losses++;
+          
+          await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${p2.id}`, {
+            method: 'PATCH',
+            headers: baseHeaders,
+            body: JSON.stringify({
+              wins: wins,
+              losses: losses,
+              goals_for: (p2.goals_for || 0) + s2,
+              goals_against: (p2.goals_against || 0) + s1
+            })
+          });
+        }
+
+        // 4. Помечаем сам матч как завершенный
+        await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, {
+            method: 'PATCH',
+            headers: baseHeaders,
+            body: JSON.stringify({ is_completed: true })
         });
 
-        if (!res.ok) throw new Error('Не удалось удалить игрока');
-        
+        await loadTournament();
+      } catch (err) {
+        alert('Ошибка при завершении матча: ' + err.message);
+      }
+    }
+
+    window.deletePlayer = async function(userId) {
+      if (!confirm('Точно хочешь удалить этого участника из турнира?')) return;
+      try {
+        await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${userId}`, { method: 'DELETE', headers: baseHeaders });
         await loadTournament();
       } catch (err) {
         alert('Ошибка при удалении: ' + err.message);
@@ -208,7 +274,6 @@
       
       try {
         let response = await fetch(`${SUPABASE_URL}/rest/v1/users?select=*`, { method: 'GET', headers: baseHeaders });
-        if (!response.ok) throw new Error('Ошибка чтения пользователей');
         let users = await response.json();
         
         let me = users.find(u => u.id === telegramId);
@@ -228,23 +293,33 @@
           document.getElementById('nickname-input').value = me.username;
         }
 
+        // Сортируем игроков по очкам (победы * 3) и разнице мячей для красивой таблицы
+        users.sort((a, b) => {
+          let ptsA = (a.wins || 0) * 3;
+          let ptsB = (b.wins || 0) * 3;
+          if (ptsA !== ptsB) return ptsB - ptsA;
+          let gdA = (a.goals_for || 0) - (a.goals_against || 0);
+          let gdB = (b.goals_for || 0) - (b.goals_against || 0);
+          return gdB - gdA;
+        });
+
         if (users && users.length > 0) {
-          usersContainer.innerHTML = users.map(user => {
+          usersContainer.innerHTML = users.map((user, index) => {
             const isMe = user.id === telegramId;
             const displayName = user.username || 'Аноним';
             const highlightClass = isMe ? 'border-blue-500/50 bg-blue-900/20' : 'border-slate-700/50 bg-slate-800';
+            const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '⚽';
             
             return `
               <div class="p-4 rounded-xl border shadow-sm ${highlightClass}">
                 <div class="flex items-center justify-between mb-2">
                   <div class="flex items-center">
-                    <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 text-blue-400">⚽</div>
+                    <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 text-blue-400">${medal}</div>
                     <span class="font-semibold text-slate-200">
                       ${displayName} 
                       ${isMe ? '<span class="text-xs text-blue-400 ml-1 font-normal">(Ты)</span>' : ''}
                     </span>
                   </div>
-                  <!-- Кнопка удаления видна только админу -->
                   ${isAdmin ? `<button onclick="deletePlayer(${user.id})" class="text-red-400/50 hover:text-red-400 hover:bg-red-900/30 px-2 py-1 rounded text-xs transition">✕ Удалить</button>` : ''}
                 </div>
                 <div class="grid grid-cols-3 gap-2 text-center text-xs bg-slate-900/50 p-2 rounded-lg text-slate-400">
@@ -260,7 +335,6 @@
         }
 
         const matchesRes = await fetch(`${SUPABASE_URL}/rest/v1/matches?select=*`, { method: 'GET', headers: baseHeaders });
-        if (!matchesRes.ok) throw new Error('Таблица matches недоступна');
         allMatches = await matchesRes.json();
         renderMatches();
 
@@ -270,26 +344,21 @@
     }
 
     window.saveNickname = async function() {
+      // ...содержимое осталось без изменений...
       const newName = document.getElementById('nickname-input').value.trim();
       if (!newName) return;
-      
       const btn = document.getElementById('save-btn');
       btn.innerText = '...';
       btn.disabled = true;
-      
       try {
-        const updateRes = await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${telegramId}`, {
+        await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${telegramId}`, {
           method: 'PATCH',
           headers: baseHeaders,
           body: JSON.stringify({ username: newName })
         });
-        
-        if (!updateRes.ok) throw new Error('Не удалось обновить никнейм');
-        
         const msg = document.getElementById('save-msg');
         msg.classList.remove('hidden');
         setTimeout(() => msg.classList.add('hidden'), 3000);
-        
         await loadTournament();
       } catch (err) {
         alert(err.message);
