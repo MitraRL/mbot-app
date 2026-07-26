@@ -9,29 +9,8 @@
 </head>
 <body class="bg-slate-900 text-white font-sans antialiased min-h-screen">
   
-  <!-- ================= ЗАГЛУШКА (ЕСЛИ НЕ ПРОШЕЛ РЕГИСТРАЦИЮ В БОТЕ) ================= -->
-  <div id="registration-screen" class="hidden min-h-screen flex-col items-center justify-center p-4 bg-slate-900/95 backdrop-blur-sm z-50 fixed inset-0">
-    <div class="bg-slate-800 p-6 rounded-2xl border border-blue-500/30 shadow-2xl w-full max-w-sm text-center relative overflow-hidden">
-      <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-indigo-500"></div>
-      
-      <div class="text-4xl mb-4 mt-2">🛡️</div>
-      <h2 class="text-xl font-bold text-white mb-2">Требуется регистрация</h2>
-      <p class="text-xs text-slate-400 mb-6">Ты еще не выбрал платформу или не отправил скриншот состава боту.</p>
-      
-      <div class="bg-slate-900/50 p-4 rounded-xl mb-6 text-sm text-slate-300 text-left space-y-2">
-        <div>1. Вернись в чат с ботом.</div>
-        <div>2. Нажми /start и выбери платформу.</div>
-        <div>3. Скинь боту скриншот своего состава.</div>
-      </div>
-      
-      <button onclick="Telegram.WebApp.close()" class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl text-sm font-bold text-white transition shadow-lg shadow-blue-500/30">
-        Вернуться в чат с ботом
-      </button>
-    </div>
-  </div>
-
   <!-- ================= ОСНОВНОЕ ПРИЛОЖЕНИЕ ================= -->
-  <div id="main-app" class="hidden">
+  <div id="main-app" class="block">
     
     <div class="max-w-md mx-auto p-4 pb-24">
       
@@ -535,18 +514,25 @@
       allUsers = await res.json();
       let me = allUsers.find(u => u.id === telegramId);
       
-      if (!me || !me.platform) {
-        // Если пользователя нет в базе или у него не заполнена платформа — показываем заглушку
-        document.getElementById('registration-screen').classList.remove('hidden');
-        document.getElementById('registration-screen').classList.add('flex');
-        document.getElementById('main-app').classList.add('hidden');
-        return; 
+      if (!me) {
+        await fetch(`${SUPABASE_URL}/rest/v1/users`, {
+          method: 'POST', 
+          headers: { ...baseHeaders, 'Prefer': 'resolution=merge-duplicates' },
+          body: JSON.stringify({ 
+            id: telegramId, 
+            username: tgUsername, 
+            wins: 0, 
+            losses: 0, 
+            goals_for: 0, 
+            goals_against: 0, 
+            group_name: 'Без группы',
+            platform: 'PlayStation'
+          })
+        });
+        res = await fetch(`${SUPABASE_URL}/rest/v1/users?select=*`, { headers: baseHeaders });
+        allUsers = await res.json();
+        me = allUsers.find(u => u.id === telegramId);
       }
-      
-      // Иначе открываем приложение
-      document.getElementById('registration-screen').classList.add('hidden');
-      document.getElementById('registration-screen').classList.remove('flex');
-      document.getElementById('main-app').classList.remove('hidden');
       
       document.getElementById('profile-nickname').value = me.username || '';
       document.getElementById('profile-platform').value = me.platform || 'PlayStation';
