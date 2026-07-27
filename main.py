@@ -31,11 +31,11 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 ADMIN_ID = 438290253 
 
 bot = telebot.TeleBot(TOKEN)
-bot_info = bot.get_me() # Получаем инфу о самом боте (нужно для ссылок)
+bot_info = bot.get_me() 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 user_platform_state = {}
-tournament_creation_state = {} # Словарь для хранения состояний при создании турнира
+tournament_creation_state = {} 
 
 def get_main_menu():
     markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
@@ -87,20 +87,17 @@ def send_welcome(message):
     user_id = message.from_user.id
     username = message.from_user.username or "Аноним"
     
-    # 1. Проверяем, перешел ли игрок по инвайт-ссылке
     args = message.text.split()
     invite_code = None
     if len(args) > 1 and args[1].startswith('invite_'):
         invite_code = args[1].replace('invite_', '')
 
-    # 2. Обработка Инвайт-ссылки
     if invite_code:
         try:
             t_res = supabase.table('tournaments').select('*').eq('invite_code', invite_code).execute()
             if t_res.data:
                 tour = t_res.data[0]
                 if tour['status'] == 'active':
-                    # Проверяем, не состоит ли он уже в нем
                     tp_check = supabase.table('tournament_players').select('*').eq('tournament_id', tour['id']).eq('user_id', user_id).execute()
                     if not tp_check.data:
                         supabase.table('tournament_players').insert({'tournament_id': tour['id'], 'user_id': user_id}).execute()
@@ -131,7 +128,7 @@ def send_welcome(message):
                 bot.send_message(message.chat.id, "Войти в Турнирный Хаб:", reply_markup=get_app_keyboard())
                 return 
     except Exception as e:
-        print(f"Ошибка проверки пользователя: {e}")
+        pass
 
     try:
         res = supabase.table('users').select('*').eq('id', user_id).execute()
@@ -198,26 +195,23 @@ def admin_broadcast(message):
 def handle_text(message):
     text = message.text
     user_id = message.from_user.id
-    username = message.from_user.username or "Аноним"
 
-    # Шаг ввода названия турнира
     if user_id in tournament_creation_state and tournament_creation_state[user_id]['step'] == 'waiting_name':
         if len(text) < 3 or len(text) > 40:
             bot.send_message(message.chat.id, "⚠️ Название должно быть от 3 до 40 символов. Попробуй еще раз:")
             return
         
         tournament_creation_state[user_id]['name'] = text
-        tournament_creation_state[user_id]['step'] = 'waiting_privacy'
+        tournament_creation_state[user_id]['step'] = 'waiting_format' # Новый шаг
 
         markup = InlineKeyboardMarkup()
         markup.add(
-            InlineKeyboardButton("🔓 Открытый (Виден всем в Лобби)", callback_data="privacy_public"),
-            InlineKeyboardButton("🔒 Закрытый (Только по ссылке)", callback_data="privacy_private")
+            InlineKeyboardButton("👤 1 на 1 (Соло)", callback_data="format_1x1"),
+            InlineKeyboardButton("👥 2 на 2 (Командный)", callback_data="format_2x2")
         )
-        bot.send_message(message.chat.id, f"Название: **{text}**\n\nВыбери тип приватности:", reply_markup=markup, parse_mode="Markdown")
+        bot.send_message(message.chat.id, f"Название: **{text}**\n\nВыбери формат турнира:", reply_markup=markup, parse_mode="Markdown")
         return
 
-    # Кнопки Главного меню
     if text == "➕ Создать турнир":
         tournament_creation_state[user_id] = {'step': 'waiting_name'}
         bot.send_message(message.chat.id, "🏆 **Создание турнира**\n\nВведи крутое название для твоего турнира (например, 'Кубок Москвы'):", reply_markup=ReplyKeyboardRemove(), parse_mode="Markdown")
@@ -232,7 +226,27 @@ def handle_text(message):
     elif text not in ['/start', '/help', '/commands'] and not text.startswith('/send'):
         bot.reply_to(message, "Воспользуйся кнопкой ниже для входа в турниры 👇", reply_markup=get_app_keyboard())
 
-# --- ОБРАБОТКА ВЫБОРА ПРИВАТНОСТИ И ОТПРАВКА НА МОДЕРАЦИЮ ---
+# --- ВЫБОР ФОРМАТА ---
+@bot.callback_query_handler(func=lambda call: call.data.startswith('format_'))
+def handle_format(call):
+    user_id = call.from_user.id
+    if user_id not in tournament_creation_state:
+        bot.answer_callback_query(call.id, "Время сессии истекло. Начни заново.", show_alert=True)
+        return
+
+    fmt = '1x1' if call.data == 'format_1x1' else '2x2'
+    tournament_creation_state[user_id]['format'] = fmt
+    tournament_creation_state[user_id]['step'] = 'waiting_privacy'
+
+    markup = InlineKeyboardMarkup()
+    markup.add(
+        InlineKeyboardButton("🔓 Открытый (Виден всем)", callback_data="privacy_public"),
+        InlineKeyboardButton("🔒 Закрытый (Только по ссылке)", callback_data="privacy_private")
+    )
+    bot.edit_message_text(f"Формат: **{fmt}**\n\nВыбери тип приватности:", call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+
+
+# --- ВЫБОР ПРИВАТНОСТИ И ОТПРАВКА НА МОДЕРАЦИЮ ---
 @bot.callback_query_handler(func=lambda call: call.data.startswith('privacy_'))
 def handle_privacy(call):
     user_id = call.from_user.id
@@ -242,24 +256,24 @@ def handle_privacy(call):
 
     is_private = True if call.data == 'privacy_private' else False
     tour_name = tournament_creation_state[user_id]['name']
-    invite_code = str(uuid.uuid4())[:8] # Генерируем короткий уникальный код
+    fmt = tournament_creation_state[user_id].get('format', '1x1')
+    invite_code = str(uuid.uuid4())[:8] 
 
     try:
-        # Сохраняем турнир как pending
         res = supabase.table('tournaments').insert({
             'name': tour_name,
             'creator_id': user_id,
             'is_private': is_private,
             'status': 'pending',
-            'invite_code': invite_code
+            'invite_code': invite_code,
+            'format': fmt
         }).execute()
         
         tour_id = res.data[0]['id']
 
-        bot.edit_message_text(f"✅ Заявка на турнир **{tour_name}** отправлена на модерацию!\nКак только админ ее проверит, бот пришлет тебе ссылку для инвайтов.", call.message.chat.id, call.message.message_id, parse_mode="Markdown")
+        bot.edit_message_text(f"✅ Заявка на турнир **{tour_name} ({fmt})** отправлена на модерацию!\nКак только админ ее проверит, бот пришлет тебе ссылку для инвайтов.", call.message.chat.id, call.message.message_id, parse_mode="Markdown")
         bot.send_message(call.message.chat.id, "Возвращаю меню:", reply_markup=get_main_menu())
 
-        # Отправляем уведомление Глобальному Админу (Тебе)
         admin_markup = InlineKeyboardMarkup()
         admin_markup.add(
             InlineKeyboardButton("✅ Одобрить", callback_data=f"mod_approve_{tour_id}"),
@@ -271,6 +285,7 @@ def handle_privacy(call):
             f"🚨 **Новая заявка на турнир!**\n\n"
             f"👤 ID Автора: `{user_id}`\n"
             f"🏆 Название: **{tour_name}**\n"
+            f"⚔️ Формат: **{fmt}**\n"
             f"👁 Тип: {privacy_text}",
             reply_markup=admin_markup,
             parse_mode="Markdown"
@@ -278,7 +293,7 @@ def handle_privacy(call):
     except Exception as e:
         bot.answer_callback_query(call.id, f"Ошибка: {e}")
 
-    del tournament_creation_state[user_id] # Очищаем состояние
+    del tournament_creation_state[user_id] 
 
 
 # --- КНОПКИ АДМИНА (ОДОБРИТЬ/ОТКЛОНИТЬ) ---
@@ -301,22 +316,19 @@ def handle_moderation(call):
         tour = tour_res.data[0]
 
         if action == 'approve':
-            # Одобряем турнир
             supabase.table('tournaments').update({'status': 'active'}).eq('id', tour_id).execute()
             
-            # Автоматически добавляем создателя в участники турнира
             try:
                 supabase.table('tournament_players').insert({'tournament_id': tour_id, 'user_id': tour['creator_id']}).execute()
             except: pass
 
             bot.edit_message_text(f"{call.message.text}\n\n**[ ✅ ОДОБРЕН ]**", call.message.chat.id, call.message.message_id)
             
-            # Отправляем радостную весть создателю
             invite_link = f"https://t.me/{bot_info.username}?start=invite_{tour['invite_code']}"
             bot.send_message(
                 tour['creator_id'],
                 f"🎉 Твоя заявка одобрена! Турнир **{tour['name']}** создан и активен.\n\n"
-                f"🔗 **Твоя личная ссылка для приглашения друзей:**\n`{invite_link}`\n\n"
+                f"🔗 **Твоя личная ссылка для приглашения:**\n`{invite_link}`\n\n"
                 f"*(Нажми на ссылку, чтобы скопировать)*\nОни перейдут по ней и автоматически станут участниками!",
                 parse_mode="Markdown"
             )
@@ -329,14 +341,12 @@ def handle_moderation(call):
     except Exception as e:
         bot.answer_callback_query(call.id, f"Ошибка базы данных: {e}")
 
-# (Код для сохранения фото остается таким же)
 @bot.message_handler(content_types=['photo'])
 def handle_photo(message):
     user_id = message.from_user.id
     username = message.from_user.username or "Аноним"
     photo_id = message.photo[-1].file_id 
 
-    # Проверка споров
     try:
         disputes = supabase.table('matches').select('*').eq('is_completed', False).eq('is_disputed', True).execute()
         user_dispute_match = None
@@ -351,8 +361,7 @@ def handle_photo(message):
             return 
     except: pass
 
-    # Сохранение фото состава
-    platform = user_platform_state.get(user_id, 'PC') # Fallback
+    platform = user_platform_state.get(user_id, 'PC')
     bot.send_chat_action(message.chat.id, 'upload_photo')
     try:
         file_info = bot.get_file(photo_id)
@@ -362,7 +371,6 @@ def handle_photo(message):
         supabase.storage.from_('squads').upload(path=file_name, file=downloaded_file, file_options={"content-type": "image/jpeg"})
         squad_url = supabase.storage.from_('squads').get_public_url(file_name)
         
-        # Сохраняем в users (глобальный) - позже будем прикреплять к конкретным турнирам
         supabase.table('users').update({'current_squad_url': squad_url}).eq('id', user_id).execute()
         
         bot.reply_to(message, "✅ Фото состава успешно сохранено в твой профиль!", reply_markup=get_app_keyboard())
