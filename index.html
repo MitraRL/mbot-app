@@ -35,8 +35,9 @@
     </div>
   </div>
 
-  <!-- ЭКРАН 1: ЛОББИ -->
+  <!-- ЭКРАН 1: ЛОББИ (ВЫБОР ТУРНИРА) -->
   <div id="lobby-screen" class="block min-h-screen p-4 pb-24 max-w-md mx-auto">
+      
       <div class="flex justify-between items-center mb-8 bg-slate-800/50 p-3 rounded-2xl border border-slate-700/50">
         <div class="flex items-center space-x-3">
           <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center font-bold text-xl shadow-lg border border-slate-700" id="lobby-avatar">U</div>
@@ -65,9 +66,29 @@
     <div class="bg-slate-800 w-full max-w-sm max-h-[90vh] overflow-y-auto scrollbar-hide rounded-3xl border border-slate-700 shadow-2xl flex flex-col relative p-6">
       <button onclick="closeGlobalProfileModal()" class="absolute top-4 right-4 bg-slate-700 hover:bg-slate-600 text-white rounded-full w-8 h-8 flex items-center justify-center transition">✕</button>
       <h2 class="text-lg font-bold text-white mb-4">⚙️ Настройки Хаба</h2>
+      
       <div class="space-y-4">
-        <div><p class="text-[10px] uppercase text-slate-400 font-bold mb-1">Игровой Никнейм</p><input id="set-nickname" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm"></div>
-        <div><p class="text-[10px] uppercase text-slate-400 font-bold mb-1">Платформа</p><select id="set-platform" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm"><option value="PlayStation">PlayStation</option><option value="Xbox">Xbox</option><option value="PC">PC</option></select></div>
+        <div>
+          <p class="text-[10px] uppercase text-slate-400 font-bold mb-1">Игровой Никнейм</p>
+          <input id="set-nickname" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm">
+        </div>
+        <div>
+          <p class="text-[10px] uppercase text-slate-400 font-bold mb-1">Платформа</p>
+          <select id="set-platform" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm">
+            <option value="PlayStation">PlayStation</option>
+            <option value="Xbox">Xbox</option>
+            <option value="PC">PC</option>
+          </select>
+        </div>
+        
+        <div class="border-t border-slate-700 pt-3">
+          <h3 class="text-xs text-blue-400 font-bold mb-2">Связь в игре</h3>
+          <div>
+            <p class="text-[10px] uppercase text-slate-500 font-bold mb-1">🎮 EA ID (Ник в игре)</p>
+            <input id="set-ea-id" type="text" placeholder="Твой ник для инвайтов" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm">
+          </div>
+        </div>
+
         <div class="border-t border-slate-700 pt-3">
           <h3 class="text-xs text-blue-400 font-bold mb-2">Медиа и Соцсети</h3>
           <div class="space-y-2">
@@ -76,7 +97,11 @@
               <div><p class="text-[10px] uppercase text-slate-500 font-bold mb-1">📣 TG Канал (Ссылка)</p><input id="set-tgchannel" type="text" placeholder="https://t.me/..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm"></div>
           </div>
         </div>
-        <div><p class="text-[10px] uppercase text-slate-400 font-bold mb-1">О себе / Достижения</p><textarea id="set-bio" rows="2" placeholder="Играю с FIFA 17..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm resize-none"></textarea></div>
+
+        <div>
+          <p class="text-[10px] uppercase text-slate-400 font-bold mb-1">О себе / Достижения</p>
+          <textarea id="set-bio" rows="2" placeholder="Играю с FIFA 17..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm resize-none"></textarea>
+        </div>
         <button onclick="saveGlobalSettings()" class="w-full bg-blue-600 hover:bg-blue-500 py-3 mt-2 rounded-xl text-sm font-bold text-white transition shadow-lg shadow-blue-500/20">Сохранить изменения</button>
       </div>
     </div>
@@ -137,7 +162,7 @@
       </div>
     </div>
 
-    <!-- МОДАЛКИ ВНУТРИ ТУРНИРА -->
+    <!-- МОДАЛКИ -->
     <div id="public-profile-modal" class="hidden fixed inset-0 z-[60] bg-slate-900/90 backdrop-blur-sm flex justify-center items-end sm:items-center">
       <div class="bg-slate-800 w-full max-w-md h-[85vh] sm:h-auto sm:max-h-[90vh] rounded-t-3xl sm:rounded-3xl border-t sm:border border-slate-700 shadow-2xl flex flex-col relative">
         <button onclick="closePlayerProfile()" class="absolute top-4 right-4 bg-slate-700 hover:bg-slate-600 text-white rounded-full w-8 h-8 flex items-center justify-center transition z-10">✕</button>
@@ -229,6 +254,7 @@
 
         document.getElementById('set-nickname').value = globalMe.username || ''; 
         document.getElementById('set-platform').value = globalMe.platform;
+        document.getElementById('set-ea-id').value = globalMe.ea_id || ''; 
         document.getElementById('set-youtube').value = globalMe.youtube_link || ''; 
         document.getElementById('set-twitch').value = globalMe.twitch_link || ''; 
         document.getElementById('set-tgchannel').value = globalMe.tg_channel || ''; 
@@ -243,12 +269,13 @@
     window.saveGlobalSettings = async function() {
         const newName = document.getElementById('set-nickname').value.trim(); 
         const newPlat = document.getElementById('set-platform').value;
+        const newEaId = document.getElementById('set-ea-id').value.trim();
         const newYt = document.getElementById('set-youtube').value.trim();
         const newTw = document.getElementById('set-twitch').value.trim();
         const newTgCh = document.getElementById('set-tgchannel').value.trim();
         const newBio = document.getElementById('set-bio').value.trim();
         if (!newName) return Telegram.WebApp.showAlert('Имя не может быть пустым!');
-        await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${telegramId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ username: newName, platform: newPlat, youtube_link: newYt, twitch_link: newTw, tg_channel: newTgCh, bio: newBio }) });
+        await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${telegramId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ username: newName, platform: newPlat, ea_id: newEaId, youtube_link: newYt, twitch_link: newTw, tg_channel: newTgCh, bio: newBio }) });
         Telegram.WebApp.showAlert('Профиль успешно обновлен!'); closeGlobalProfileModal(); await initApp();
     }
 
@@ -335,7 +362,21 @@
         let squadImg = sq ? `<img src="${sq}" class="w-full h-auto rounded-lg border border-slate-700/50 mt-2 shadow-lg">` : `<div class="text-xs text-slate-500 bg-slate-900/50 p-4 rounded-lg border border-slate-800 text-center mt-2">Состав не загружен</div>`;
         let diff = (user.goals_for || 0) - (user.goals_against || 0); let diffStr = diff > 0 ? `+${diff}` : diff; let diffColor = diff > 0 ? 'text-green-400' : (diff < 0 ? 'text-red-400' : 'text-white');
 
-        // РЕНДЕР БЕЙДЖЕЙ (Достижения)
+        let eaIdHtml = '';
+        if (user.ea_id) {
+            eaIdHtml = `
+            <div class="mb-5 bg-indigo-900/30 border border-indigo-500/30 p-3 rounded-xl flex justify-between items-center shadow-inner">
+                <div class="flex items-center space-x-3">
+                    <span class="text-2xl">🎮</span>
+                    <div>
+                        <div class="text-[9px] uppercase text-indigo-400 font-bold tracking-wider">EA ID для инвайта</div>
+                        <div class="text-sm font-bold text-white">${user.ea_id}</div>
+                    </div>
+                </div>
+                <button onclick="navigator.clipboard.writeText('${user.ea_id}'); Telegram.WebApp.showAlert('EA ID скопирован в буфер обмена!');" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-2 rounded-lg text-xs font-bold text-white transition shadow-md">Копировать</button>
+            </div>`;
+        }
+
         let badgesHtml = '';
         if (user.badges && user.badges.length > 0) {
             badgesHtml = `
@@ -370,6 +411,7 @@
                     <div class="inline-block mt-1 px-2 py-0.5 bg-blue-900/50 border border-blue-500/30 rounded text-xs text-blue-400 font-semibold">${user.platform}</div>
                 </div>
             </div>
+            ${eaIdHtml}
             ${bioHtml}
             ${badgesHtml}
             <div class="mb-6">
@@ -490,7 +532,6 @@
     window.changeScore = async function(matchId, s1, s2) { await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ score1: s1, score2: s2 }) }); await loadTournamentData(); }
     window.resetScore = async function(matchId) { window.changeScore(matchId, 0, 0); }
 
-    // АВТОМАТИЧЕСКАЯ ВЫДАЧА ДОСТИЖЕНИЙ
     async function checkAchievements(uName, myS, oppS, round) {
         let u = allUsers.find(x => x.username === uName);
         if (!u || !u.base_id) return;
@@ -533,7 +574,6 @@
         allMatches = await mRes.json(); 
         let finishedMatch = allMatches.find(m => m.id === matchId); 
         
-        // Проверяем ачивки для обоих игроков
         if (finishedMatch) {
             await checkAchievements(p1Name, s1, s2, finishedMatch.round);
             await checkAchievements(p2Name, s2, s1, finishedMatch.round);
