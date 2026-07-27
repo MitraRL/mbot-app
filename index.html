@@ -146,7 +146,11 @@
             <button onclick="autoDrawGroups()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">🎲</span> Сформировать группы</button>
             <button onclick="generateGroupMatches()" class="w-full bg-blue-600 hover:bg-blue-500 py-2 mt-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">⚔️</span> Создать матчи групп</button>
             <button onclick="startPlayoffs()" class="w-full bg-purple-600 hover:bg-purple-500 py-2 mt-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">🚀</span> Запустить Плей-офф</button>
-            <div class="pt-3 mt-3 border-t border-slate-700/50 space-y-2"><button onclick="archiveTournament()" class="w-full bg-green-600/80 hover:bg-green-500 py-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">🏁</span> Завершить Турнир</button></div>
+            <div class="pt-3 mt-3 border-t border-slate-700/50 space-y-2">
+                <!-- НОВАЯ КНОПКА ДЛЯ УДАЛЕНИЯ ВСЕХ МАТЧЕЙ -->
+                <button onclick="deleteAllMatches()" class="w-full bg-red-900/60 hover:bg-red-800 py-2 rounded-lg text-xs font-bold text-red-300 hover:text-white transition flex justify-center items-center border border-red-500/30"><span class="mr-2">🗑</span> Сбросить ВСЕ матчи</button>
+                <button onclick="archiveTournament()" class="w-full bg-green-600/80 hover:bg-green-500 py-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">🏁</span> Завершить Турнир</button>
+            </div>
           </div>
           <div class="space-y-3 pt-3 border-t border-slate-700/50">
             <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Ручное создание матча</p>
@@ -192,6 +196,7 @@
         <button onclick="switchTab('matches')" id="nav-matches" class="nav-btn flex-1 flex flex-col items-center p-2 text-blue-500 transition"><span class="text-2xl mb-1">⚽</span><span class="text-[10px] font-medium">Матчи</span></button>
         <button onclick="switchTab('bracket')" id="nav-bracket" class="nav-btn flex-1 flex flex-col items-center p-2 text-slate-500 transition"><span class="text-2xl mb-1">🗺️</span><span class="text-[10px] font-medium">Обзор</span></button>
         <button onclick="switchTab('profile')" id="nav-profile" class="nav-btn flex-1 flex flex-col items-center p-2 text-slate-500 transition"><span class="text-2xl mb-1">👤</span><span class="text-[10px] font-medium">Лига</span></button>
+        <!-- КНОПКА ПОЯВИТСЯ ТОЛЬКО У АДМИНА -->
         <button onclick="switchTab('admin')" id="nav-admin" class="nav-btn flex-1 hidden flex-col items-center p-2 text-slate-500 transition"><span class="text-2xl mb-1">⚙️</span><span class="text-[10px] font-medium">Управление</span></button>
       </div>
     </div>
@@ -318,16 +323,12 @@
     // ЛОГИКА ВНУТРИ ТУРНИРА
     // ==========================================
 
-    // Обновленная функция для переключения Админ-мода
     window.toggleAdminMode = async function(isChecked) {
         adminEditMode = isChecked;
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
             window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
         }
-        
-        // Показываем индикатор загрузки, пока тянутся данные
         document.getElementById('db-matches').innerHTML = '<div class="text-center text-slate-500 py-6 animate-pulse">⚙️ Применение настроек...</div>';
-        
         await loadTournamentData(); 
     }
 
@@ -462,12 +463,11 @@
     // НАВИГАЦИЯ И ВКЛАДКИ
     // ==========================================
     
-    // Новая надежная функция переключения вкладок с обработкой ошибок
     window.switchTab = function(tabName) { 
         try {
             let targetTab = document.getElementById(`tab-${tabName}`);
             if (!targetTab) {
-                Telegram.WebApp.showAlert('Ошибка: Вкладка не найдена! Попробуй перезагрузить мини-апп.');
+                Telegram.WebApp.showAlert('Вкладка не найдена.');
                 return;
             }
 
@@ -494,7 +494,7 @@
                 activeNavBtn.classList.add('text-blue-500'); 
             }
         } catch(e) {
-            alert("Произошла ошибка при переключении: " + e.message);
+            console.error(e);
         }
     }
 
@@ -617,6 +617,27 @@
     window.finishMatch = function(matchId, p1Name, p2Name, s1, s2) { Telegram.WebApp.showConfirm('Завершить принудительно (как Орг)?', function(c) { if (c) executeFinishMatch(matchId, p1Name, p2Name, s1, s2); }); }
     window.changeScore = async function(matchId, s1, s2) { await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ score1: s1, score2: s2 }) }); await loadTournamentData(); }
     window.resetScore = async function(matchId) { window.changeScore(matchId, 0, 0); }
+
+    // ФУНКЦИЯ ПОЛНОГО СБРОСА ВСЕХ МАТЧЕЙ
+    window.deleteAllMatches = function() { 
+        Telegram.WebApp.showConfirm("⚠️ ВНИМАНИЕ! Это удалит абсолютно ВСЕ матчи турнира и сбросит статистику (победы/голы) до нуля. Продолжить?", async function(c) { 
+            if (!c) return; 
+            
+            // Обнуляем стату
+            let resetPromises = allUsers.map(u => {
+                if (u.tp_id) {
+                    return fetch(`${SUPABASE_URL}/rest/v1/tournament_players?id=eq.${u.tp_id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: 0, losses: 0, goals_for: 0, goals_against: 0 }) });
+                }
+            });
+            await Promise.all(resetPromises);
+
+            // Удаляем матчи
+            await fetch(`${SUPABASE_URL}/rest/v1/matches?tournament_id=eq.${currentTourId}`, { method: 'DELETE', headers: baseHeaders }); 
+            
+            Telegram.WebApp.showAlert("✅ Все матчи удалены, статистика обнулена."); 
+            await loadTournamentData(); 
+        }); 
+    }
 
     async function checkAchievements(uName, myS, oppS, round) {
         let u = allUsers.find(x => x.username === uName);
