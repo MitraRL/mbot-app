@@ -93,7 +93,6 @@
           <div class="w-10"></div> 
       </div>
 
-      <!-- БАННЕР ЧЕК-ИНА (ПОЯВЛЯЕТСЯ ТОЛЬКО ЕСЛИ НУЖНО) -->
       <div id="checkin-banner" class="hidden mb-6 bg-gradient-to-r from-red-600 to-orange-500 p-4 rounded-2xl shadow-lg border border-red-400">
          <h3 class="font-bold text-white mb-2 flex items-center"><span class="text-xl mr-2">🚨</span> Требуется Чек-ин!</h3>
          <p class="text-xs text-white/90 mb-3 font-medium">Организатор проверяет готовность. Подтверди свое участие, иначе будешь автоматически исключен из турнира перед стартом!</p>
@@ -144,14 +143,17 @@
           <h2 class="text-sm font-bold text-yellow-400 mb-4 flex items-center">👑 Панель Организатора Лиги</h2>
           
           <div class="bg-slate-900/50 p-3 rounded-xl border border-yellow-500/20 mb-4 space-y-2">
-            <!-- КНОПКИ ЧЕК-ИНА -->
             <button onclick="startCheckIn()" class="w-full bg-orange-600 hover:bg-orange-500 py-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">⏰</span> Начать Чек-ин (Сбор игроков)</button>
             <button onclick="finishCheckIn()" class="w-full bg-red-600 hover:bg-red-500 py-2 mb-4 rounded-lg text-xs font-bold text-white transition flex justify-center items-center shadow-lg shadow-red-500/20"><span class="mr-2">✂️</span> Завершить Чек-ин (Кик АФК)</button>
             
             <button onclick="autoDrawGroups()" class="w-full bg-indigo-600 hover:bg-indigo-500 py-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">🎲</span> Сформировать группы</button>
             <button onclick="generateGroupMatches()" class="w-full bg-blue-600 hover:bg-blue-500 py-2 mt-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">⚔️</span> Создать матчи групп</button>
             <button onclick="startPlayoffs()" class="w-full bg-purple-600 hover:bg-purple-500 py-2 mt-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">🚀</span> Запустить Плей-офф</button>
+            
             <div class="pt-3 mt-3 border-t border-slate-700/50 space-y-2">
+                <button id="btn-leave-tour" onclick="leaveTournamentAdmin()" class="hidden w-full bg-slate-700 hover:bg-slate-600 py-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">🚪</span> Выйти из участников (только админить)</button>
+                <button id="btn-join-tour" onclick="joinTournamentAdmin()" class="hidden w-full bg-blue-600 hover:bg-blue-500 py-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">🏃‍♂️</span> Стать участником турнира</button>
+
                 <button onclick="deleteAllMatches()" class="w-full bg-red-900/60 hover:bg-red-800 py-2 rounded-lg text-xs font-bold text-red-300 hover:text-white transition flex justify-center items-center border border-red-500/30"><span class="mr-2">🗑</span> Сбросить ВСЕ матчи</button>
                 <button onclick="archiveTournament()" class="w-full bg-green-600/80 hover:bg-green-500 py-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">🏁</span> Завершить Турнир</button>
             </div>
@@ -281,14 +283,20 @@
         
         let myToursHtml = ''; let publicToursHtml = '';
         activeTours.forEach(t => {
-            let isMine = myTourIds.includes(t.id); let isCreator = t.creator_id === telegramId; let isOfficial = ADMIN_IDS.includes(t.creator_id);
+            let isPlayer = myTourIds.includes(t.id); 
+            let isCreator = t.creator_id === telegramId; 
+            let isGlobalAdmin = ADMIN_IDS.includes(telegramId);
+            let isOfficial = ADMIN_IDS.includes(t.creator_id);
+            let canManage = isCreator || isGlobalAdmin;
+
             let badge = isCreator ? `<span class="bg-yellow-500/20 text-yellow-500 text-[9px] px-1.5 py-0.5 rounded font-bold ml-2">Организатор</span>` : '';
             let officialBadge = isOfficial ? `<span class="bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[9px] px-2 py-0.5 rounded-full font-bold ml-2 shadow-lg shadow-orange-500/30">👑 PRO LIGA</span>` : '';
             let formatBadge = t.format === '2x2' ? `<span class="bg-blue-600/30 text-blue-300 text-[9px] px-1.5 py-0.5 rounded font-bold ml-2 border border-blue-500/30">👥 2x2</span>` : `<span class="bg-slate-600/30 text-slate-300 text-[9px] px-1.5 py-0.5 rounded font-bold ml-2 border border-slate-500/30">👤 1x1</span>`;
             let borderClass = isOfficial ? 'border-orange-500/50 shadow-orange-500/10' : 'border-slate-700/50';
 
-            let card = `<div onclick="handleTournamentClick(${t.id}, '${t.name}', ${isMine}, ${t.is_private})" class="bg-slate-800 p-4 rounded-xl border ${borderClass} shadow-md mb-3 cursor-pointer hover:bg-slate-700 transition relative overflow-hidden flex justify-between items-center">${isMine ? '<div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>' : ''}<div><h3 class="text-sm font-bold text-white flex items-center flex-wrap gap-y-1">${t.name} ${officialBadge} ${badge} ${formatBadge}</h3><p class="text-[10px] text-slate-400 mt-1">${t.is_private ? '🔒 Закрытая лига' : '🔓 Открытая лига'}</p></div><div class="text-xl">👉</div></div>`;
-            if (isMine) myToursHtml += card; else if (!t.is_private) publicToursHtml += card;
+            let card = `<div onclick="handleTournamentClick(${t.id}, '${t.name}', ${isPlayer}, ${t.is_private}, ${canManage})" class="bg-slate-800 p-4 rounded-xl border ${borderClass} shadow-md mb-3 cursor-pointer hover:bg-slate-700 transition relative overflow-hidden flex justify-between items-center">${isPlayer ? '<div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>' : ''}<div><h3 class="text-sm font-bold text-white flex items-center flex-wrap gap-y-1">${t.name} ${officialBadge} ${badge} ${formatBadge}</h3><p class="text-[10px] text-slate-400 mt-1">${t.is_private ? '🔒 Закрытая лига' : '🔓 Открытая лига'}</p></div><div class="text-xl">👉</div></div>`;
+            
+            if (isPlayer || canManage) myToursHtml += card; else if (!t.is_private) publicToursHtml += card;
         });
         document.getElementById('my-tournaments-list').innerHTML = myToursHtml || `<div class="text-xs text-slate-500 text-center py-4 bg-slate-800/50 rounded-xl border border-slate-700/50">Ты пока не участвуешь ни в одном турнире.</div>`;
         document.getElementById('public-tournaments-list').innerHTML = publicToursHtml || `<div class="text-xs text-slate-500 text-center py-4 bg-slate-800/50 rounded-xl border border-slate-700/50">Открытых турниров пока нет.</div>`;
@@ -298,7 +306,9 @@
         document.getElementById('lobby-predictors').innerHTML = predHtml || `<div class="text-xs text-slate-500 text-center py-4 bg-slate-800/50 rounded-xl border border-slate-700/50">Пока никто не делал верных прогнозов.</div>`;
     }
 
-    async function handleTournamentClick(id, name, isMine, isPrivate) { if (isMine) { await enterTournament(id, name); } else { Telegram.WebApp.showConfirm(`Присоединиться к публичному турниру "${name}"?`, async function(confirmed) { if (confirmed) { await fetch(`${SUPABASE_URL}/rest/v1/tournament_players`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ tournament_id: id, user_id: telegramId }) }); Telegram.WebApp.showAlert('Успешно! Ты в турнире.'); await enterTournament(id, name); } }); } }
+    async function handleTournamentClick(id, name, isPlayer, isPrivate, canManage) { 
+        if (isPlayer || canManage) { await enterTournament(id, name); } else { Telegram.WebApp.showConfirm(`Присоединиться к публичному турниру "${name}"?`, async function(confirmed) { if (confirmed) { await fetch(`${SUPABASE_URL}/rest/v1/tournament_players`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ tournament_id: id, user_id: telegramId }) }); Telegram.WebApp.showAlert('Успешно! Ты в турнире.'); await enterTournament(id, name); } }); } 
+    }
 
     window.toggleAdminMode = async function(isChecked) { adminEditMode = isChecked; if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) { window.Telegram.WebApp.HapticFeedback.impactOccurred('medium'); } document.getElementById('db-matches').innerHTML = '<div class="text-center text-slate-500 py-6 animate-pulse">⚙️ Применение настроек...</div>'; await loadTournamentData(); }
 
@@ -322,14 +332,20 @@
 
         let meInTour = allUsers.find(u => u.base_id === telegramId);
         
-        // --- ЛОГИКА ОТОБРАЖЕНИЯ БАННЕРА ЧЕК-ИНА ---
-        if (currentTourData.checkin_active && meInTour && !meInTour.is_ready) {
-            document.getElementById('checkin-banner').classList.remove('hidden');
-        } else {
-            document.getElementById('checkin-banner').classList.add('hidden');
+        if (isAdminMode) {
+            let btnLeave = document.getElementById('btn-leave-tour');
+            let btnJoin = document.getElementById('btn-join-tour');
+            if(btnLeave && btnJoin) {
+                if (meInTour) { btnLeave.classList.remove('hidden'); btnJoin.classList.add('hidden'); } 
+                else { btnLeave.classList.add('hidden'); btnJoin.classList.remove('hidden'); }
+            }
         }
 
-        if (meInTour) { document.getElementById('profile-content').innerHTML = generateProfileHtml(meInTour, []); }
+        if (currentTourData.checkin_active && meInTour && !meInTour.is_ready) { document.getElementById('checkin-banner').classList.remove('hidden'); } 
+        else { document.getElementById('checkin-banner').classList.add('hidden'); }
+
+        if (meInTour) { document.getElementById('profile-content').innerHTML = generateProfileHtml(meInTour, []); } 
+        else { document.getElementById('profile-content').innerHTML = `<div class="text-center py-10"><div class="text-5xl mb-4">🕵️‍♂️</div><h2 class="text-lg font-bold text-white mb-2">Режим Наблюдателя</h2><p class="text-xs text-slate-400">Ты не являешься участником этого турнира, но можешь следить за результатами матчей и управлять сеткой.</p></div>`; }
 
         const gUsers = {}; allUsers.forEach(u => { const g = u.group_name || 'Без группы'; if(!gUsers[g]) gUsers[g] = []; gUsers[g].push(u); });
         let pHtml = '';
@@ -339,11 +355,8 @@
                 const isMe = u.base_id === telegramId; const m = i === 0 ? '1️⃣' : i === 1 ? '2️⃣' : i === 2 ? '3️⃣' : '⚽'; const pI = u.platform === 'PlayStation' ? '🎮 PS' : (u.platform === 'Xbox' ? '❎ Xbox' : '💻 PC');
                 let diff = (u.goals_for || 0) - (u.goals_against || 0); let diffStr = diff > 0 ? `+${diff}` : diff; let diffColor = diff > 0 ? 'text-green-400' : (diff < 0 ? 'text-red-400' : 'text-slate-300');
                 
-                // Иконка готовности (если чек-ин активен)
                 let checkinIcon = '';
-                if (currentTourData.checkin_active) {
-                    checkinIcon = u.is_ready ? '<span class="ml-2 text-xs">✅</span>' : '<span class="ml-2 text-xs" title="Ожидаем подтверждения">⏳</span>';
-                }
+                if (currentTourData.checkin_active) { checkinIcon = u.is_ready ? '<span class="ml-2 text-xs">✅</span>' : '<span class="ml-2 text-xs" title="Ожидаем подтверждения">⏳</span>'; }
 
                 let adminTools = (isAdminMode && adminEditMode) ? `<div class="flex space-x-2 pl-2 relative z-10"><button onclick="event.stopPropagation(); fetch('${SUPABASE_URL}/rest/v1/tournament_players?id=eq.${u.tp_id}', {method: 'PATCH', headers: baseHeaders, body: JSON.stringify({group_name: prompt('Группа:', 'Группа A')})}).then(loadTournamentData);" class="text-blue-400/70 hover:text-blue-400 px-2 py-1 bg-slate-900 rounded text-[10px] uppercase font-bold transition">⚙️</button></div>` : '<div class="text-slate-500 text-xs opacity-50">👁️</div>';
                 return `<div onclick="openPlayerProfile(${u.base_id})" class="cursor-pointer p-4 rounded-xl border shadow-sm mb-3 transition hover:bg-slate-700/80 ${isMe ? 'border-blue-500/50 bg-blue-900/20' : 'border-slate-700/50 bg-slate-800'} relative"><div class="flex items-center justify-between mb-3"><div class="flex items-center overflow-hidden"><div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 text-blue-400 text-sm flex-shrink-0">${m}</div><div class="flex flex-col text-left truncate"><span class="font-bold text-slate-200 text-sm leading-tight truncate">${u.username || 'Аноним'} ${checkinIcon}</span><span class="text-[10px] text-slate-400 mt-0.5 truncate">${pI}</span></div></div>${adminTools}</div><div class="grid grid-cols-4 gap-2 text-center text-xs bg-slate-900/50 p-2 rounded-lg text-slate-400 pointer-events-none"><div>Поб: <span class="text-white font-bold">${u.wins || 0}/${u.losses || 0}</span></div><div>Мячи: <span class="text-white font-bold">${u.goals_for || 0}:${u.goals_against || 0}</span></div><div>+/-: <span class="${diffColor} font-bold">${diffStr}</span></div><div>Очки: <span class="text-blue-400 font-bold">${(u.wins || 0) * 3}</span></div></div></div>`;
@@ -362,53 +375,12 @@
         if (!document.getElementById('bracket-scorers-container').classList.contains('hidden')) renderScorers();
     }
 
-    // --- ФУНКЦИИ УМНОГО ЧЕК-ИНА ---
-    window.startCheckIn = function() {
-        Telegram.WebApp.showConfirm('Начать чек-ин? У всех игроков сбросится статус готовности, и им придет уведомление от бота.', async function(c) {
-            if(!c) return;
-            document.getElementById('db-matches').innerHTML = '<div class="text-center text-slate-500 py-6 animate-pulse">Запуск чек-ина...</div>';
-            
-            await fetch(`${SUPABASE_URL}/rest/v1/tournaments?id=eq.${currentTourId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ checkin_active: true }) });
-            
-            let promises = allUsers.map(u => fetch(`${SUPABASE_URL}/rest/v1/tournament_players?id=eq.${u.tp_id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ is_ready: false }) }));
-            await Promise.all(promises);
+    window.leaveTournamentAdmin = function() { let me = allUsers.find(u => u.base_id === telegramId); if(!me) return; Telegram.WebApp.showConfirm('Выйти из числа участников? Ты останешься администратором турнира, но перейдешь в режим наблюдателя.', async function(c) { if(!c) return; await fetch(`${SUPABASE_URL}/rest/v1/tournament_players?id=eq.${me.tp_id}`, { method: 'DELETE', headers: baseHeaders }); Telegram.WebApp.showAlert('Успешно! Ты перешел в режим наблюдателя.'); await loadTournamentData(); }); }
+    window.joinTournamentAdmin = async function() { await fetch(`${SUPABASE_URL}/rest/v1/tournament_players`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ tournament_id: currentTourId, user_id: telegramId }) }); Telegram.WebApp.showAlert('Успешно! Ты зарегистрирован как участник.'); await loadTournamentData(); }
 
-            let notifPromises = allUsers.map(u => {
-                if (u.base_id) {
-                    return fetch(`${SUPABASE_URL}/rest/v1/notifications`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ telegram_id: u.base_id, message: `🚨 В турнире **${currentTourData.name}** начался ЧЕК-ИН!\n\nЗайди в Хаб и нажми кнопку «Я готов играть!», иначе ты будешь автоматически исключен перед жеребьевкой.` }) });
-                }
-            });
-            await Promise.all(notifPromises);
-
-            Telegram.WebApp.showAlert('Чек-ин запущен! Уведомления отправлены игрокам.');
-            await loadTournamentData();
-        });
-    }
-
-    window.confirmCheckIn = async function() {
-        let me = allUsers.find(u => u.base_id === telegramId);
-        if(!me) return;
-        await fetch(`${SUPABASE_URL}/rest/v1/tournament_players?id=eq.${me.tp_id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ is_ready: true }) });
-        Telegram.WebApp.showAlert('Отлично! Твоя готовность подтверждена ✅');
-        await loadTournamentData();
-    }
-
-    window.finishCheckIn = function() {
-        Telegram.WebApp.showConfirm('Завершить Чек-ин? Все игроки, кто НЕ нажал кнопку, будут БЕЗВОЗВРАТНО удалены из турнира!', async function(c) {
-            if(!c) return;
-            document.getElementById('db-matches').innerHTML = '<div class="text-center text-slate-500 py-6 animate-pulse">Удаление АФК игроков...</div>';
-            
-            let afkUsers = allUsers.filter(u => !u.is_ready);
-            let promises = afkUsers.map(u => fetch(`${SUPABASE_URL}/rest/v1/tournament_players?id=eq.${u.tp_id}`, { method: 'DELETE', headers: baseHeaders }));
-            await Promise.all(promises);
-
-            await fetch(`${SUPABASE_URL}/rest/v1/tournaments?id=eq.${currentTourId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ checkin_active: false }) });
-            
-            Telegram.WebApp.showAlert(`Чек-ин завершен! Исключено спящих игроков: ${afkUsers.length}`);
-            await loadTournamentData();
-        });
-    }
-
+    window.startCheckIn = function() { Telegram.WebApp.showConfirm('Начать чек-ин? У всех игроков сбросится статус готовности, и им придет уведомление от бота.', async function(c) { if(!c) return; document.getElementById('db-matches').innerHTML = '<div class="text-center text-slate-500 py-6 animate-pulse">Запуск чек-ина...</div>'; await fetch(`${SUPABASE_URL}/rest/v1/tournaments?id=eq.${currentTourId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ checkin_active: true }) }); let promises = allUsers.map(u => fetch(`${SUPABASE_URL}/rest/v1/tournament_players?id=eq.${u.tp_id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ is_ready: false }) })); await Promise.all(promises); let notifPromises = allUsers.map(u => { if (u.base_id) { return fetch(`${SUPABASE_URL}/rest/v1/notifications`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ telegram_id: u.base_id, message: `🚨 В турнире **${currentTourData.name}** начался ЧЕК-ИН!\n\nЗайди в Хаб и нажми кнопку «Я готов играть!`, иначе ты будешь автоматически исключен перед жеребьевкой.` }) }); } }); await Promise.all(notifPromises); Telegram.WebApp.showAlert('Чек-ин запущен! Уведомления отправлены игрокам.'); await loadTournamentData(); }); }
+    window.confirmCheckIn = async function() { let me = allUsers.find(u => u.base_id === telegramId); if(!me) return; await fetch(`${SUPABASE_URL}/rest/v1/tournament_players?id=eq.${me.tp_id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ is_ready: true }) }); Telegram.WebApp.showAlert('Отлично! Твоя готовность подтверждена ✅'); await loadTournamentData(); }
+    window.finishCheckIn = function() { Telegram.WebApp.showConfirm('Завершить Чек-ин? Все игроки, кто НЕ нажал кнопку, будут БЕЗВОЗВРАТНО удалены из турнира!', async function(c) { if(!c) return; document.getElementById('db-matches').innerHTML = '<div class="text-center text-slate-500 py-6 animate-pulse">Удаление АФК игроков...</div>'; let afkUsers = allUsers.filter(u => !u.is_ready); let promises = afkUsers.map(u => fetch(`${SUPABASE_URL}/rest/v1/tournament_players?id=eq.${u.tp_id}`, { method: 'DELETE', headers: baseHeaders })); await Promise.all(promises); await fetch(`${SUPABASE_URL}/rest/v1/tournaments?id=eq.${currentTourId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ checkin_active: false }) }); Telegram.WebApp.showAlert(`Чек-ин завершен! Исключено спящих игроков: ${afkUsers.length}`); await loadTournamentData(); }); }
 
     function getMyName() { let me = allUsers.find(u => u.base_id === telegramId); return me ? me.username : tgUsername; }
 
@@ -547,47 +519,66 @@
     window.finishMatch = function(matchId, p1Name, p2Name, s1, s2) { Telegram.WebApp.showConfirm('Завершить принудительно (как Орг)?', function(c) { if (c) executeFinishMatch(matchId, p1Name, p2Name, s1, s2); }); }
     window.changeScore = async function(matchId, s1, s2) { await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ score1: s1, score2: s2 }) }); await loadTournamentData(); }
     window.resetScore = async function(matchId) { window.changeScore(matchId, 0, 0); }
-    window.deleteAllMatches = function() { Telegram.WebApp.showConfirm("⚠️ ВНИМАНИЕ! Это удалит абсолютно ВСЕ матчи турнира и сбросит статистику (победы/голы) до нуля. Продолжить?", async function(c) { if (!c) return; let resetPromises = allUsers.map(u => { if (u.tp_id) { return fetch(`${SUPABASE_URL}/rest/v1/tournament_players?id=eq.${u.tp_id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: 0, losses: 0, goals_for: 0, goals_against: 0 }) }); } }); await Promise.all(resetPromises); await fetch(`${SUPABASE_URL}/rest/v1/matches?tournament_id=eq.${currentTourId}`, { method: 'DELETE', headers: baseHeaders }); Telegram.WebApp.showAlert("✅ Все матчи удалены, статистика обнулена."); await loadTournamentData(); }); }
 
-    async function checkAchievements(uName, myS, oppS, round) {
-        let u = allUsers.find(x => x.username === uName); if (!u || !u.base_id) return;
-        let b = u.badges || []; let newB = [];
-        if (myS > oppS && oppS === 0 && !b.includes('🚌 Автобус')) newB.push('🚌 Автобус');
-        if (myS - oppS >= 4 && !b.includes('🔥 Каток')) newB.push('🔥 Каток');
-        if (myS > oppS && round === 'Финал' && !b.includes('🏆 Чемпион')) newB.push('🏆 Чемпион');
-        if (newB.length > 0) {
-            let updatedB = [...b, ...newB];
-            await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${u.base_id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ badges: updatedB }) });
-            u.badges = updatedB;
-            for(let badge of newB) { await sendNotification(uName, `🏅 Поздравляем! Разблокировано достижение: **${badge}**! Загляни в свой профиль на платформе!`); }
-        }
-    }
+    // --- НОВАЯ БЕЗОПАСНАЯ ФУНКЦИЯ АРХИВАЦИИ С ОТЛОВОМ ОШИБОК ---
+    window.archiveTournament = function() { 
+        Telegram.WebApp.showConfirm("⚠️ Завершить турнир? Он пропадет из активных и навсегда сохранится в историю всех игроков.", async function(c) { 
+            if (!c) return; 
+            try {
+                document.getElementById('db-matches').innerHTML = '<div class="text-center text-slate-500 py-6 animate-pulse">Сохранение истории турнира...</div>';
 
-    async function executeFinishMatch(matchId, p1Name, p2Name, s1, s2) { 
-        let p1 = allUsers.find(u => u.username === p1Name); let p2 = allUsers.find(u => u.username === p2Name); 
-        if (p1 && p1.tp_id) { let w = p1.wins||0; let l = p1.losses||0; if(s1>s2) w++; if(s1<s2) l++; await fetch(`${SUPABASE_URL}/rest/v1/tournament_players?id=eq.${p1.tp_id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: w, losses: l, goals_for: (p1.goals_for||0)+s1, goals_against: (p1.goals_against||0)+s2 }) }); } 
-        if (p2 && p2.tp_id) { let w = p2.wins||0; let l = p2.losses||0; if(s2>s1) w++; if(s2<s1) l++; await fetch(`${SUPABASE_URL}/rest/v1/tournament_players?id=eq.${p2.tp_id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: w, losses: l, goals_for: (p2.goals_for||0)+s2, goals_against: (p2.goals_against||0)+s1 }) }); } 
-        await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ is_completed: true, score1: s1, score2: s2, proposed_score1: null, proposed_score2: null, proposed_by: null, is_disputed: false }) }); 
-        await sendNotification(p1Name, `🏁 Матч завершен! ${p1Name} [${s1} : ${s2}] ${p2Name}`); await sendNotification(p2Name, `🏁 Матч завершен! ${p1Name} [${s1} : ${s2}] ${p2Name}`); 
-        let mRes = await fetch(`${SUPABASE_URL}/rest/v1/matches?tournament_id=eq.${currentTourId}&select=*`, { headers: baseHeaders }); allMatches = await mRes.json(); let finishedMatch = allMatches.find(m => m.id === matchId); 
-        if (finishedMatch) {
-            await checkAchievements(p1Name, s1, s2, finishedMatch.round); await checkAchievements(p2Name, s2, s1, finishedMatch.round);
-            let actualWinner = null; if (s1 > s2) actualWinner = p1Name; if (s2 > s1) actualWinner = p2Name;
-            if (actualWinner && finishedMatch.predictions) {
-                for (let uid in finishedMatch.predictions) {
-                    if (finishedMatch.predictions[uid] === actualWinner) {
-                        fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${uid}`, { headers: baseHeaders }).then(res => res.json()).then(data => {
-                            if (data && data.length > 0) { let newPoints = (data[0].prediction_points || 0) + 10; fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${uid}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ prediction_points: newPoints }) }); }
-                        });
-                    }
-                }
+                // 1. Меняем статус турнира на завершенный
+                await fetch(`${SUPABASE_URL}/rest/v1/tournaments?id=eq.${currentTourId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ status: 'completed' }) }); 
+                
+                // 2. Проходимся по всем игрокам и сохраняем их результаты
+                for (let u of allUsers) { 
+                    if ((u.wins > 0 || u.losses > 0 || u.goals_for > 0 || u.goals_against > 0)) { 
+                        
+                        // Вычисляем стадию вылета
+                        let userMatches = allMatches.filter(m => m.is_completed && (m.player1 === u.username || m.player2 === u.username));
+                        let stage = 'Группы';
+                        let rounds = ['Финал', 'Полуфинал', '1/4 финала', '1/8 финала', '1/16 финала', 'Группы'];
+                        
+                        for (let r of rounds) {
+                            let mInR = userMatches.find(m => m.round === r);
+                            if (mInR) {
+                                let isMyWin = (mInR.player1 === u.username && mInR.score1 > mInR.score2) || (mInR.player2 === u.username && mInR.score2 > mInR.score1);
+                                if (r === 'Финал' && isMyWin) { stage = 'Победитель 🏆'; break; }
+                                if (r === 'Финал' && !isMyWin) { stage = 'Финалист 🥈'; break; }
+                                stage = `Вылет: ${r}`;
+                                break;
+                            }
+                        }
+
+                        let payload = { 
+                            user_id: u.base_id, 
+                            tournament_name: currentTourData.name, 
+                            wins: u.wins, 
+                            losses: u.losses, 
+                            goals_for: u.goals_for, 
+                            goals_against: u.goals_against, 
+                            squad_url: u.squad_url || u.current_squad_url,
+                            stage_reached: stage 
+                        };
+
+                        let res = await fetch(`${SUPABASE_URL}/rest/v1/player_history`, { 
+                            method: 'POST', 
+                            headers: baseHeaders, 
+                            body: JSON.stringify(payload) 
+                        }); 
+
+                        if (!res.ok) {
+                            console.error("Ошибка сохранения истории для", u.username);
+                        }
+                    } 
+                } 
+                Telegram.WebApp.showAlert("✅ Турнир официально завершен и отправлен в архив."); 
+                returnToLobby(); 
+            } catch (e) {
+                Telegram.WebApp.showAlert("❌ Ошибка при завершении: " + e.message);
             }
-        }
-        if (finishedMatch && finishedMatch.round !== 'Группы' && finishedMatch.round !== 'Финал') { await checkAndAdvancePlayoffs(finishedMatch.round); } 
-        await loadTournamentData(); 
+        }); 
     }
-    
-    window.rollbackMatch = function(matchId, p1Name, p2Name, s1, s2) { Telegram.WebApp.showConfirm('Отменить завершение матча и списать очки?', async function(c) { if (!c) return; let p1 = allUsers.find(u => u.username === p1Name); let p2 = allUsers.find(u => u.username === p2Name); if (p1 && p1.tp_id) { let w = p1.wins||0; let l = p1.losses||0; if(s1>s2 && w>0) w--; if(s1<s2 && l>0) l--; await fetch(`${SUPABASE_URL}/rest/v1/tournament_players?id=eq.${p1.tp_id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: w, losses: l, goals_for: Math.max(0, (p1.goals_for||0)-s1), goals_against: Math.max(0, (p1.goals_against||0)-s2) }) }); } if (p2 && p2.tp_id) { let w = p2.wins||0; let l = p2.losses||0; if(s2>s1 && w>0) w--; if(s2<s1 && l>0) l--; await fetch(`${SUPABASE_URL}/rest/v1/tournament_players?id=eq.${p2.tp_id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: w, losses: l, goals_for: Math.max(0, (p2.goals_for||0)-s2), goals_against: Math.max(0, (p2.goals_against||0)-s1) }) }); } await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ is_completed: false }) }); await loadTournamentData(); }); }
     
     initApp();
   </script>
