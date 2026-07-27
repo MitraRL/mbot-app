@@ -2,9 +2,26 @@ import telebot
 import threading
 import time
 import uuid
+import os
+from flask import Flask
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo, MenuButtonWebApp, BotCommand
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 from supabase import create_client, Client
+
+# --- НАСТРОЙКИ FLASK (ФЕЙКОВЫЙ СЕРВЕР ДЛЯ RENDER) ---
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    return "Хаб турниров работает 24/7!"
+
+def run_web():
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host='0.0.0.0', port=port)
+
+def keep_alive():
+    t = threading.Thread(target=run_web)
+    t.start()
 
 # --- ТВОИ КЛЮЧИ И ТОКЕН ---
 TOKEN = '8864393991:AAExQCkXmUMBDAnMrs2rhJBE-9G1po0Xypw' 
@@ -319,7 +336,7 @@ def handle_photo(message):
     username = message.from_user.username or "Аноним"
     photo_id = message.photo[-1].file_id 
 
-    # Проверка споров (оставляем старую логику для обратной совместимости пока не обновим фронт)
+    # Проверка споров
     try:
         disputes = supabase.table('matches').select('*').eq('is_completed', False).eq('is_disputed', True).execute()
         user_dispute_match = None
@@ -356,5 +373,9 @@ try:
     bot.set_chat_menu_button(menu_button=MenuButtonWebApp(type='web_app', text='🏆 Турнир', web_app=WebAppInfo(url='https://mitrarl.github.io/mbot-app/')))
 except: pass
 
-print("Бот запущен и готов к работе...")
-bot.infinity_polling(timeout=10, long_polling_timeout=5)
+if __name__ == "__main__":
+    print("Запускаем веб-сервер для Render...")
+    keep_alive()
+    
+    print("Бот запущен и готов к работе...")
+    bot.infinity_polling(timeout=10, long_polling_timeout=5)
