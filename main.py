@@ -202,7 +202,7 @@ def handle_text(message):
             return
         
         tournament_creation_state[user_id]['name'] = text
-        tournament_creation_state[user_id]['step'] = 'waiting_format' # Новый шаг
+        tournament_creation_state[user_id]['step'] = 'waiting_format' 
 
         markup = InlineKeyboardMarkup()
         markup.add(
@@ -318,10 +318,9 @@ def handle_moderation(call):
         if action == 'approve':
             supabase.table('tournaments').update({'status': 'active'}).eq('id', tour_id).execute()
             
-            try:
-                supabase.table('tournament_players').insert({'tournament_id': tour_id, 'user_id': tour['creator_id']}).execute()
-            except: pass
-
+            # АДМИН БОЛЬШЕ НЕ ДОБАВЛЯЕТСЯ В УЧАСТНИКИ АВТОМАТИЧЕСКИ
+            # Теперь он по умолчанию Зритель/Организатор
+            
             bot.edit_message_text(f"{call.message.text}\n\n**[ ✅ ОДОБРЕН ]**", call.message.chat.id, call.message.message_id)
             
             invite_link = f"https://t.me/{bot_info.username}?start=invite_{tour['invite_code']}"
