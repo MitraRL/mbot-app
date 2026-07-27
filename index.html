@@ -125,7 +125,7 @@
         <div id="profile-content" class="bg-slate-800 rounded-2xl p-5 border border-slate-700/50 shadow-sm"><div class="text-center py-4 animate-pulse">Загрузка профиля...</div></div>
       </div>
 
-      <!-- НОВАЯ ЭКСКЛЮЗИВНАЯ ВКЛАДКА АДМИНИСТРАТОРА -->
+      <!-- ЭКСКЛЮЗИВНАЯ ВКЛАДКА АДМИНИСТРАТОРА -->
       <div id="tab-admin" class="tab-content hidden space-y-4">
         
         <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700/50 shadow-sm flex justify-between items-center mb-4">
@@ -186,12 +186,12 @@
         </div>
     </div>
 
-    <div class="fixed bottom-0 left-0 w-full bg-slate-900/95 backdrop-blur-md border-t border-slate-800 z-50">
+    <!-- НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ -->
+    <div class="fixed bottom-0 left-0 w-full bg-slate-900/95 backdrop-blur-md border-t border-slate-800 z-50 pointer-events-auto">
       <div class="max-w-md mx-auto flex justify-around p-2 pb-safe">
         <button onclick="switchTab('matches')" id="nav-matches" class="nav-btn flex-1 flex flex-col items-center p-2 text-blue-500 transition"><span class="text-2xl mb-1">⚽</span><span class="text-[10px] font-medium">Матчи</span></button>
         <button onclick="switchTab('bracket')" id="nav-bracket" class="nav-btn flex-1 flex flex-col items-center p-2 text-slate-500 transition"><span class="text-2xl mb-1">🗺️</span><span class="text-[10px] font-medium">Обзор</span></button>
         <button onclick="switchTab('profile')" id="nav-profile" class="nav-btn flex-1 flex flex-col items-center p-2 text-slate-500 transition"><span class="text-2xl mb-1">👤</span><span class="text-[10px] font-medium">Лига</span></button>
-        <!-- КНОПКА ПОЯВИТСЯ ТОЛЬКО У АДМИНА -->
         <button onclick="switchTab('admin')" id="nav-admin" class="nav-btn flex-1 hidden flex-col items-center p-2 text-slate-500 transition"><span class="text-2xl mb-1">⚙️</span><span class="text-[10px] font-medium">Управление</span></button>
       </div>
     </div>
@@ -212,7 +212,6 @@
     const tgUsername = (tgUser && tgUser.username) ? tgUser.username : 'Гость';
     const telegramId = (tgUser && tgUser.id) ? tgUser.id : Math.floor(Math.random() * 1000000);
     
-    // МАССИВ АДМИНОВ. Сюда через запятую можно добавить ID твоих друзей-модераторов.
     const ADMIN_IDS = [438290253]; 
     
     const SUPABASE_URL = 'https://kvsrxuibrovumaikqptk.supabase.co';
@@ -230,7 +229,7 @@
     let proposeModeMatchId = null;
     
     let isAdminMode = false;
-    let adminEditMode = true; // Переменная для переключателя режима
+    let adminEditMode = true; 
 
     let activeScorerMatchId = null; 
     let activeScorerPlayerNum = null; 
@@ -318,14 +317,24 @@
     // ==========================================
     // ЛОГИКА ВНУТРИ ТУРНИРА
     // ==========================================
+
+    // Обновленная функция для переключения Админ-мода
     window.toggleAdminMode = async function(isChecked) {
         adminEditMode = isChecked;
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+            window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+        }
+        
+        // Показываем индикатор загрузки, пока тянутся данные
+        document.getElementById('db-matches').innerHTML = '<div class="text-center text-slate-500 py-6 animate-pulse">⚙️ Применение настроек...</div>';
+        
         await loadTournamentData(); 
     }
 
     async function enterTournament(id, name) {
         currentTourId = id; document.getElementById('lobby-screen').classList.add('hidden'); document.getElementById('lobby-screen').classList.remove('block'); document.getElementById('main-app').classList.remove('hidden'); document.getElementById('page-title').innerText = name; switchTab('matches'); await loadTournamentData();
     }
+    
     function returnToLobby() { currentTourId = null; loadLobby(); }
 
     async function loadTournamentData() {
@@ -334,11 +343,11 @@
         
         isAdminMode = (ADMIN_IDS.includes(telegramId) || telegramId === currentTourData.creator_id);
         
-        // УПРАВЛЕНИЕ ВИДИМОСТЬЮ ВКЛАДКИ АДМИНА
         if (isAdminMode) { 
             document.getElementById('nav-admin').classList.remove('hidden'); 
             document.getElementById('nav-admin').classList.add('flex'); 
-            document.getElementById('admin-mode-toggle').checked = adminEditMode;
+            let toggleEl = document.getElementById('admin-mode-toggle');
+            if(toggleEl) toggleEl.checked = adminEditMode;
         } else { 
             document.getElementById('nav-admin').classList.add('hidden'); 
             document.getElementById('nav-admin').classList.remove('flex'); 
@@ -369,7 +378,6 @@
                 const isMe = u.base_id === telegramId; const m = i === 0 ? '1️⃣' : i === 1 ? '2️⃣' : i === 2 ? '3️⃣' : '⚽'; const pI = u.platform === 'PlayStation' ? '🎮 PS' : (u.platform === 'Xbox' ? '❎ Xbox' : '💻 PC');
                 let diff = (u.goals_for || 0) - (u.goals_against || 0); let diffStr = diff > 0 ? `+${diff}` : diff; let diffColor = diff > 0 ? 'text-green-400' : (diff < 0 ? 'text-red-400' : 'text-slate-300');
                 
-                // РЕДАКТИРОВАНИЕ ГРУПП (ТОЛЬКО ЕСЛИ АДМИН И РЕЖИМ ВКЛЮЧЕН)
                 let adminTools = (isAdminMode && adminEditMode) ? `<div class="flex space-x-2 pl-2 relative z-10"><button onclick="event.stopPropagation(); fetch('${SUPABASE_URL}/rest/v1/tournament_players?id=eq.${u.tp_id}', {method: 'PATCH', headers: baseHeaders, body: JSON.stringify({group_name: prompt('Группа:', 'Группа A')})}).then(loadTournamentData);" class="text-blue-400/70 hover:text-blue-400 px-2 py-1 bg-slate-900 rounded text-[10px] uppercase font-bold transition">⚙️</button></div>` : '<div class="text-slate-500 text-xs opacity-50">👁️</div>';
                 
                 return `<div onclick="openPlayerProfile(${u.base_id})" class="cursor-pointer p-4 rounded-xl border shadow-sm mb-3 transition hover:bg-slate-700/80 ${isMe ? 'border-blue-500/50 bg-blue-900/20' : 'border-slate-700/50 bg-slate-800'} relative"><div class="flex items-center justify-between mb-3"><div class="flex items-center overflow-hidden"><div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 text-blue-400 text-sm flex-shrink-0">${m}</div><div class="flex flex-col text-left truncate"><span class="font-bold text-slate-200 text-sm leading-tight truncate">${u.username || 'Аноним'}</span><span class="text-[10px] text-slate-400 mt-0.5 truncate">${pI}</span></div></div>${adminTools}</div><div class="grid grid-cols-4 gap-2 text-center text-xs bg-slate-900/50 p-2 rounded-lg text-slate-400 pointer-events-none"><div>Поб: <span class="text-white font-bold">${u.wins || 0}/${u.losses || 0}</span></div><div>Мячи: <span class="text-white font-bold">${u.goals_for || 0}:${u.goals_against || 0}</span></div><div>+/-: <span class="${diffColor} font-bold">${diffStr}</span></div><div>Очки: <span class="text-blue-400 font-bold">${(u.wins || 0) * 3}</span></div></div></div>`;
@@ -422,7 +430,6 @@
             linksHtml += '</div>'; bioHtml = `<div class="bg-slate-900/50 border border-slate-700/50 p-4 rounded-xl mb-5">${bioText}${linksHtml}</div>`;
         }
 
-        // КНОПКА ИСКЛЮЧЕНИЯ ИГРОКА (ТОЛЬКО ДЛЯ АДМИНА С ВКЛЮЧЕННЫМ РЕЖИМОМ)
         let kickBtn = (isAdminMode && adminEditMode && user.base_id !== telegramId) ? `<button onclick="kickPlayer(${user.tp_id}, '${user.username}')" class="w-full mt-4 py-2 rounded-xl text-xs font-bold text-white bg-red-700 hover:bg-red-600 transition">🚪 Исключить из турнира</button>` : '';
 
         return `
@@ -454,7 +461,43 @@
     // ==========================================
     // НАВИГАЦИЯ И ВКЛАДКИ
     // ==========================================
-    window.switchTab = function(tabName) { document.querySelectorAll('.tab-content').forEach(el => { el.classList.remove('block'); el.classList.add('hidden'); }); document.getElementById(`tab-${tabName}`).classList.remove('hidden'); document.getElementById(`tab-${tabName}`).classList.add('block'); document.querySelectorAll('.nav-btn').forEach(btn => { btn.classList.remove('text-blue-500'); btn.classList.add('text-slate-500'); }); document.getElementById(`nav-${tabName}`).classList.remove('text-slate-500'); document.getElementById(`nav-${tabName}`).classList.add('text-blue-500'); }
+    
+    // Новая надежная функция переключения вкладок с обработкой ошибок
+    window.switchTab = function(tabName) { 
+        try {
+            let targetTab = document.getElementById(`tab-${tabName}`);
+            if (!targetTab) {
+                Telegram.WebApp.showAlert('Ошибка: Вкладка не найдена! Попробуй перезагрузить мини-апп.');
+                return;
+            }
+
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+                window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+            }
+
+            document.querySelectorAll('.tab-content').forEach(el => { 
+                el.classList.remove('block'); 
+                el.classList.add('hidden'); 
+            }); 
+            
+            targetTab.classList.remove('hidden'); 
+            targetTab.classList.add('block'); 
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => { 
+                btn.classList.remove('text-blue-500'); 
+                btn.classList.add('text-slate-500'); 
+            }); 
+            
+            let activeNavBtn = document.getElementById(`nav-${tabName}`);
+            if(activeNavBtn) {
+                activeNavBtn.classList.remove('text-slate-500'); 
+                activeNavBtn.classList.add('text-blue-500'); 
+            }
+        } catch(e) {
+            alert("Произошла ошибка при переключении: " + e.message);
+        }
+    }
+
     window.setBracketTab = function(tabType) { document.getElementById('bracket-playoff-container').classList.add('hidden'); document.getElementById('bracket-groups-container').classList.add('hidden'); document.getElementById('bracket-scorers-container').classList.add('hidden'); document.getElementById('btn-bracket-playoff').className = 'flex-1 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition bg-transparent'; document.getElementById('btn-bracket-groups').className = 'flex-1 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition bg-transparent'; document.getElementById('btn-bracket-scorers').className = 'flex-1 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition bg-transparent'; if (tabType === 'playoff') { document.getElementById('bracket-playoff-container').classList.remove('hidden'); document.getElementById('btn-bracket-playoff').className = 'flex-1 py-2 rounded-lg text-xs font-bold bg-indigo-600 text-white shadow-md transition'; } else if (tabType === 'groups') { document.getElementById('bracket-groups-container').classList.remove('hidden'); document.getElementById('btn-bracket-groups').className = 'flex-1 py-2 rounded-lg text-xs font-bold bg-blue-600 text-white shadow-md transition'; } else if (tabType === 'scorers') { document.getElementById('bracket-scorers-container').classList.remove('hidden'); document.getElementById('btn-bracket-scorers').className = 'flex-1 py-2 rounded-lg text-xs font-bold bg-yellow-600 text-white shadow-md transition'; renderScorers(); } }
     window.setRound = function(roundName) { currentRound = roundName; document.querySelectorAll('#round-buttons button').forEach(btn => { let isHidden = btn.classList.contains('hidden'); btn.className = `px-5 py-2.5 rounded-full text-sm transition whitespace-nowrap ${isHidden ? 'hidden ' : ''} font-semibold bg-slate-800 text-slate-400`; }); let actId = (roundName === 'Группы') ? 'btn-groups' : (roundName === '1/16 финала') ? 'btn-1-16' : (roundName === '1/8 финала') ? 'btn-1-8' : (roundName === '1/4 финала') ? 'btn-1-4' : (roundName === 'Полуфинал') ? 'btn-semi' : (roundName === 'Финал') ? 'btn-final' : ''; if (actId) { let btn = document.getElementById(actId); let isHidden = btn.classList.contains('hidden'); btn.className = `px-5 py-2.5 rounded-full text-sm transition whitespace-nowrap ${isHidden ? 'hidden ' : ''} font-semibold bg-blue-500 text-white shadow-lg shadow-blue-500/30`; } editModeMatchId = null; proposeModeMatchId = null; renderMatches(); }
 
@@ -538,7 +581,6 @@
                 if (s1Text || s2Text || btn1 || btn2) { scorersHtml = `<div class="mt-3 pt-2 border-t border-slate-700/50 flex justify-between text-[10px] text-slate-400 leading-tight"><div class="w-1/2 pr-1 text-left">${s1Text ? `<span class="text-slate-300">⚽ ${s1Text}</span>` : ''} ${btn1}</div><div class="w-1/2 pl-1 text-right">${s2Text ? `<span class="text-slate-300">${s2Text} ⚽</span>` : ''} ${btn2}</div></div>`; } 
             } 
 
-            // БЛОК АДМИНА
             let adminActions = ''; 
             if (isAdminMode && adminEditMode) { 
                 if (m.is_completed) { adminActions = `<div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-2"><div class="text-center text-xs text-green-400 font-semibold">✅ Завершен</div><button onclick="rollbackMatch(${m.id}, '${m.player1}', '${m.player2}', ${m.score1}, ${m.score2})" class="bg-yellow-600/30 hover:bg-yellow-600/50 text-yellow-300 py-1.5 rounded-lg text-xs font-semibold transition">⏪ Отменить (Орг)</button></div>`; } 
