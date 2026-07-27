@@ -378,8 +378,29 @@
     window.leaveTournamentAdmin = function() { let me = allUsers.find(u => u.base_id === telegramId); if(!me) return; Telegram.WebApp.showConfirm('Выйти из числа участников? Ты останешься администратором турнира, но перейдешь в режим наблюдателя.', async function(c) { if(!c) return; await fetch(`${SUPABASE_URL}/rest/v1/tournament_players?id=eq.${me.tp_id}`, { method: 'DELETE', headers: baseHeaders }); Telegram.WebApp.showAlert('Успешно! Ты перешел в режим наблюдателя.'); await loadTournamentData(); }); }
     window.joinTournamentAdmin = async function() { await fetch(`${SUPABASE_URL}/rest/v1/tournament_players`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ tournament_id: currentTourId, user_id: telegramId }) }); Telegram.WebApp.showAlert('Успешно! Ты зарегистрирован как участник.'); await loadTournamentData(); }
 
-    window.startCheckIn = function() { Telegram.WebApp.showConfirm('Начать чек-ин? У всех игроков сбросится статус готовности, и им придет уведомление от бота.', async function(c) { if(!c) return; document.getElementById('db-matches').innerHTML = '<div class="text-center text-slate-500 py-6 animate-pulse">Запуск чек-ина...</div>'; await fetch(`${SUPABASE_URL}/rest/v1/tournaments?id=eq.${currentTourId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ checkin_active: true }) }); let promises = allUsers.map(u => fetch(`${SUPABASE_URL}/rest/v1/tournament_players?id=eq.${u.tp_id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ is_ready: false }) })); await Promise.all(promises); let notifPromises = allUsers.map(u => { if (u.base_id) { return fetch(`${SUPABASE_URL}/rest/v1/notifications`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ telegram_id: u.base_id, message: `🚨 В турнире **${currentTourData.name}** начался ЧЕК-ИН!\n\nЗайди в Хаб и нажми кнопку «Я готов играть!`, иначе ты будешь автоматически исключен перед жеребьевкой.` }) }); } }); await Promise.all(notifPromises); Telegram.WebApp.showAlert('Чек-ин запущен! Уведомления отправлены игрокам.'); await loadTournamentData(); }); }
+    window.startCheckIn = function() { 
+        Telegram.WebApp.showConfirm('Начать чек-ин? У всех игроков сбросится статус готовности, и им придет уведомление от бота.', async function(c) { 
+            if(!c) return; 
+            document.getElementById('db-matches').innerHTML = '<div class="text-center text-slate-500 py-6 animate-pulse">Запуск чек-ина...</div>'; 
+            
+            await fetch(`${SUPABASE_URL}/rest/v1/tournaments?id=eq.${currentTourId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ checkin_active: true }) }); 
+            let promises = allUsers.map(u => fetch(`${SUPABASE_URL}/rest/v1/tournament_players?id=eq.${u.tp_id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ is_ready: false }) })); 
+            await Promise.all(promises); 
+            
+            let notifPromises = allUsers.map(u => { 
+                if (u.base_id) { 
+                    return fetch(`${SUPABASE_URL}/rest/v1/notifications`, { method: 'POST', headers: baseHeaders, body: JSON.stringify({ telegram_id: u.base_id, message: `🚨 В турнире **${currentTourData.name}** начался ЧЕК-ИН!\n\nЗайди в Хаб и нажми кнопку «Я готов играть!», иначе ты будешь автоматически исключен перед жеребьевкой.` }) }); 
+                } 
+            }); 
+            await Promise.all(notifPromises); 
+            
+            Telegram.WebApp.showAlert('Чек-ин запущен! Уведомления отправлены игрокам.'); 
+            await loadTournamentData(); 
+        }); 
+    }
+
     window.confirmCheckIn = async function() { let me = allUsers.find(u => u.base_id === telegramId); if(!me) return; await fetch(`${SUPABASE_URL}/rest/v1/tournament_players?id=eq.${me.tp_id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ is_ready: true }) }); Telegram.WebApp.showAlert('Отлично! Твоя готовность подтверждена ✅'); await loadTournamentData(); }
+    
     window.finishCheckIn = function() { Telegram.WebApp.showConfirm('Завершить Чек-ин? Все игроки, кто НЕ нажал кнопку, будут БЕЗВОЗВРАТНО удалены из турнира!', async function(c) { if(!c) return; document.getElementById('db-matches').innerHTML = '<div class="text-center text-slate-500 py-6 animate-pulse">Удаление АФК игроков...</div>'; let afkUsers = allUsers.filter(u => !u.is_ready); let promises = afkUsers.map(u => fetch(`${SUPABASE_URL}/rest/v1/tournament_players?id=eq.${u.tp_id}`, { method: 'DELETE', headers: baseHeaders })); await Promise.all(promises); await fetch(`${SUPABASE_URL}/rest/v1/tournaments?id=eq.${currentTourId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ checkin_active: false }) }); Telegram.WebApp.showAlert(`Чек-ин завершен! Исключено спящих игроков: ${afkUsers.length}`); await loadTournamentData(); }); }
 
     function getMyName() { let me = allUsers.find(u => u.base_id === telegramId); return me ? me.username : tgUsername; }
@@ -519,64 +540,75 @@
     window.finishMatch = function(matchId, p1Name, p2Name, s1, s2) { Telegram.WebApp.showConfirm('Завершить принудительно (как Орг)?', function(c) { if (c) executeFinishMatch(matchId, p1Name, p2Name, s1, s2); }); }
     window.changeScore = async function(matchId, s1, s2) { await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ score1: s1, score2: s2 }) }); await loadTournamentData(); }
     window.resetScore = async function(matchId) { window.changeScore(matchId, 0, 0); }
+    window.deleteAllMatches = function() { Telegram.WebApp.showConfirm("⚠️ ВНИМАНИЕ! Это удалит абсолютно ВСЕ матчи турнира и сбросит статистику (победы/голы) до нуля. Продолжить?", async function(c) { if (!c) return; let resetPromises = allUsers.map(u => { if (u.tp_id) { return fetch(`${SUPABASE_URL}/rest/v1/tournament_players?id=eq.${u.tp_id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: 0, losses: 0, goals_for: 0, goals_against: 0 }) }); } }); await Promise.all(resetPromises); await fetch(`${SUPABASE_URL}/rest/v1/matches?tournament_id=eq.${currentTourId}`, { method: 'DELETE', headers: baseHeaders }); Telegram.WebApp.showAlert("✅ Все матчи удалены, статистика обнулена."); await loadTournamentData(); }); }
 
-    // --- НОВАЯ БЕЗОПАСНАЯ ФУНКЦИЯ АРХИВАЦИИ С ОТЛОВОМ ОШИБОК ---
+    async function checkAchievements(uName, myS, oppS, round) {
+        let u = allUsers.find(x => x.username === uName); if (!u || !u.base_id) return;
+        let b = u.badges || []; let newB = [];
+        if (myS > oppS && oppS === 0 && !b.includes('🚌 Автобус')) newB.push('🚌 Автобус');
+        if (myS - oppS >= 4 && !b.includes('🔥 Каток')) newB.push('🔥 Каток');
+        if (myS > oppS && round === 'Финал' && !b.includes('🏆 Чемпион')) newB.push('🏆 Чемпион');
+        if (newB.length > 0) {
+            let updatedB = [...b, ...newB];
+            await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${u.base_id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ badges: updatedB }) });
+            u.badges = updatedB;
+            for(let badge of newB) { await sendNotification(uName, `🏅 Поздравляем! Разблокировано достижение: **${badge}**! Загляни в свой профиль на платформе!`); }
+        }
+    }
+
+    async function executeFinishMatch(matchId, p1Name, p2Name, s1, s2) { 
+        let p1 = allUsers.find(u => u.username === p1Name); let p2 = allUsers.find(u => u.username === p2Name); 
+        if (p1 && p1.tp_id) { let w = p1.wins||0; let l = p1.losses||0; if(s1>s2) w++; if(s1<s2) l++; await fetch(`${SUPABASE_URL}/rest/v1/tournament_players?id=eq.${p1.tp_id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: w, losses: l, goals_for: (p1.goals_for||0)+s1, goals_against: (p1.goals_against||0)+s2 }) }); } 
+        if (p2 && p2.tp_id) { let w = p2.wins||0; let l = p2.losses||0; if(s2>s1) w++; if(s2<s1) l++; await fetch(`${SUPABASE_URL}/rest/v1/tournament_players?id=eq.${p2.tp_id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: w, losses: l, goals_for: (p2.goals_for||0)+s2, goals_against: (p2.goals_against||0)+s1 }) }); } 
+        await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ is_completed: true, score1: s1, score2: s2, proposed_score1: null, proposed_score2: null, proposed_by: null, is_disputed: false }) }); 
+        await sendNotification(p1Name, `🏁 Матч завершен! ${p1Name} [${s1} : ${s2}] ${p2Name}`); await sendNotification(p2Name, `🏁 Матч завершен! ${p1Name} [${s1} : ${s2}] ${p2Name}`); 
+        let mRes = await fetch(`${SUPABASE_URL}/rest/v1/matches?tournament_id=eq.${currentTourId}&select=*`, { headers: baseHeaders }); allMatches = await mRes.json(); let finishedMatch = allMatches.find(m => m.id === matchId); 
+        if (finishedMatch) {
+            await checkAchievements(p1Name, s1, s2, finishedMatch.round); await checkAchievements(p2Name, s2, s1, finishedMatch.round);
+            let actualWinner = null; if (s1 > s2) actualWinner = p1Name; if (s2 > s1) actualWinner = p2Name;
+            if (actualWinner && finishedMatch.predictions) {
+                for (let uid in finishedMatch.predictions) {
+                    if (finishedMatch.predictions[uid] === actualWinner) {
+                        fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${uid}`, { headers: baseHeaders }).then(res => res.json()).then(data => {
+                            if (data && data.length > 0) { let newPoints = (data[0].prediction_points || 0) + 10; fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${uid}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ prediction_points: newPoints }) }); }
+                        });
+                    }
+                }
+            }
+        }
+        if (finishedMatch && finishedMatch.round !== 'Группы' && finishedMatch.round !== 'Финал') { await checkAndAdvancePlayoffs(finishedMatch.round); } 
+        await loadTournamentData(); 
+    }
+    
+    window.rollbackMatch = function(matchId, p1Name, p2Name, s1, s2) { Telegram.WebApp.showConfirm('Отменить завершение матча и списать очки?', async function(c) { if (!c) return; let p1 = allUsers.find(u => u.username === p1Name); let p2 = allUsers.find(u => u.username === p2Name); if (p1 && p1.tp_id) { let w = p1.wins||0; let l = p1.losses||0; if(s1>s2 && w>0) w--; if(s1<s2 && l>0) l--; await fetch(`${SUPABASE_URL}/rest/v1/tournament_players?id=eq.${p1.tp_id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: w, losses: l, goals_for: Math.max(0, (p1.goals_for||0)-s1), goals_against: Math.max(0, (p1.goals_against||0)-s2) }) }); } if (p2 && p2.tp_id) { let w = p2.wins||0; let l = p2.losses||0; if(s2>s1 && w>0) w--; if(s2<s1 && l>0) l--; await fetch(`${SUPABASE_URL}/rest/v1/tournament_players?id=eq.${p2.tp_id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ wins: w, losses: l, goals_for: Math.max(0, (p2.goals_for||0)-s2), goals_against: Math.max(0, (p2.goals_against||0)-s1) }) }); } await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ is_completed: false }) }); await loadTournamentData(); }); }
+
     window.archiveTournament = function() { 
         Telegram.WebApp.showConfirm("⚠️ Завершить турнир? Он пропадет из активных и навсегда сохранится в историю всех игроков.", async function(c) { 
             if (!c) return; 
             try {
                 document.getElementById('db-matches').innerHTML = '<div class="text-center text-slate-500 py-6 animate-pulse">Сохранение истории турнира...</div>';
-
-                // 1. Меняем статус турнира на завершенный
                 await fetch(`${SUPABASE_URL}/rest/v1/tournaments?id=eq.${currentTourId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ status: 'completed' }) }); 
-                
-                // 2. Проходимся по всем игрокам и сохраняем их результаты
                 for (let u of allUsers) { 
                     if ((u.wins > 0 || u.losses > 0 || u.goals_for > 0 || u.goals_against > 0)) { 
-                        
-                        // Вычисляем стадию вылета
                         let userMatches = allMatches.filter(m => m.is_completed && (m.player1 === u.username || m.player2 === u.username));
                         let stage = 'Группы';
                         let rounds = ['Финал', 'Полуфинал', '1/4 финала', '1/8 финала', '1/16 финала', 'Группы'];
-                        
                         for (let r of rounds) {
                             let mInR = userMatches.find(m => m.round === r);
                             if (mInR) {
                                 let isMyWin = (mInR.player1 === u.username && mInR.score1 > mInR.score2) || (mInR.player2 === u.username && mInR.score2 > mInR.score1);
                                 if (r === 'Финал' && isMyWin) { stage = 'Победитель 🏆'; break; }
                                 if (r === 'Финал' && !isMyWin) { stage = 'Финалист 🥈'; break; }
-                                stage = `Вылет: ${r}`;
-                                break;
+                                stage = `Вылет: ${r}`; break;
                             }
                         }
-
-                        let payload = { 
-                            user_id: u.base_id, 
-                            tournament_name: currentTourData.name, 
-                            wins: u.wins, 
-                            losses: u.losses, 
-                            goals_for: u.goals_for, 
-                            goals_against: u.goals_against, 
-                            squad_url: u.squad_url || u.current_squad_url,
-                            stage_reached: stage 
-                        };
-
-                        let res = await fetch(`${SUPABASE_URL}/rest/v1/player_history`, { 
-                            method: 'POST', 
-                            headers: baseHeaders, 
-                            body: JSON.stringify(payload) 
-                        }); 
-
-                        if (!res.ok) {
-                            console.error("Ошибка сохранения истории для", u.username);
-                        }
+                        let payload = { user_id: u.base_id, tournament_name: currentTourData.name, wins: u.wins, losses: u.losses, goals_for: u.goals_for, goals_against: u.goals_against, squad_url: u.squad_url || u.current_squad_url, stage_reached: stage };
+                        let res = await fetch(`${SUPABASE_URL}/rest/v1/player_history`, { method: 'POST', headers: baseHeaders, body: JSON.stringify(payload) }); 
                     } 
                 } 
                 Telegram.WebApp.showAlert("✅ Турнир официально завершен и отправлен в архив."); 
                 returnToLobby(); 
-            } catch (e) {
-                Telegram.WebApp.showAlert("❌ Ошибка при завершении: " + e.message);
-            }
+            } catch (e) { Telegram.WebApp.showAlert("❌ Ошибка при завершении: " + e.message); }
         }); 
     }
     
