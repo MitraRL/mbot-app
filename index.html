@@ -35,9 +35,8 @@
     </div>
   </div>
 
-  <!-- ЭКРАН 1: ЛОББИ (ВЫБОР ТУРНИРА И ТОП ПРОГНОЗОВ) -->
+  <!-- ЭКРАН 1: ЛОББИ -->
   <div id="lobby-screen" class="block min-h-screen p-4 pb-24 max-w-md mx-auto">
-      
       <div class="flex justify-between items-center mb-8 bg-slate-800/50 p-3 rounded-2xl border border-slate-700/50">
         <div class="flex items-center space-x-3">
           <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center font-bold text-xl shadow-lg border border-slate-700" id="lobby-avatar">U</div>
@@ -71,29 +70,10 @@
     <div class="bg-slate-800 w-full max-w-sm max-h-[90vh] overflow-y-auto scrollbar-hide rounded-3xl border border-slate-700 shadow-2xl flex flex-col relative p-6">
       <button onclick="closeGlobalProfileModal()" class="absolute top-4 right-4 bg-slate-700 hover:bg-slate-600 text-white rounded-full w-8 h-8 flex items-center justify-center transition">✕</button>
       <h2 class="text-lg font-bold text-white mb-4">⚙️ Настройки Хаба</h2>
-      
       <div class="space-y-4">
-        <div>
-          <p class="text-[10px] uppercase text-slate-400 font-bold mb-1">Игровой Никнейм</p>
-          <input id="set-nickname" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm">
-        </div>
-        <div>
-          <p class="text-[10px] uppercase text-slate-400 font-bold mb-1">Платформа</p>
-          <select id="set-platform" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm">
-            <option value="PlayStation">PlayStation</option>
-            <option value="Xbox">Xbox</option>
-            <option value="PC">PC</option>
-          </select>
-        </div>
-        
-        <div class="border-t border-slate-700 pt-3">
-          <h3 class="text-xs text-blue-400 font-bold mb-2">Связь в игре</h3>
-          <div>
-            <p class="text-[10px] uppercase text-slate-500 font-bold mb-1">🎮 EA ID (Ник в игре)</p>
-            <input id="set-ea-id" type="text" placeholder="Твой ник для инвайтов" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm">
-          </div>
-        </div>
-
+        <div><p class="text-[10px] uppercase text-slate-400 font-bold mb-1">Игровой Никнейм</p><input id="set-nickname" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm"></div>
+        <div><p class="text-[10px] uppercase text-slate-400 font-bold mb-1">Платформа</p><select id="set-platform" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm"><option value="PlayStation">PlayStation</option><option value="Xbox">Xbox</option><option value="PC">PC</option></select></div>
+        <div class="border-t border-slate-700 pt-3"><h3 class="text-xs text-blue-400 font-bold mb-2">Связь в игре</h3><div><p class="text-[10px] uppercase text-slate-500 font-bold mb-1">🎮 EA ID (Ник в игре)</p><input id="set-ea-id" type="text" placeholder="Твой ник для инвайтов" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm"></div></div>
         <div class="border-t border-slate-700 pt-3">
           <h3 class="text-xs text-blue-400 font-bold mb-2">Медиа и Соцсети</h3>
           <div class="space-y-2">
@@ -102,11 +82,7 @@
               <div><p class="text-[10px] uppercase text-slate-500 font-bold mb-1">📣 TG Канал (Ссылка)</p><input id="set-tgchannel" type="text" placeholder="https://t.me/..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm"></div>
           </div>
         </div>
-
-        <div>
-          <p class="text-[10px] uppercase text-slate-400 font-bold mb-1">О себе / Достижения</p>
-          <textarea id="set-bio" rows="2" placeholder="Играю с FIFA 17..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm resize-none"></textarea>
-        </div>
+        <div><p class="text-[10px] uppercase text-slate-400 font-bold mb-1">О себе / Достижения</p><textarea id="set-bio" rows="2" placeholder="Играю с FIFA 17..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-sm resize-none"></textarea></div>
         <button onclick="saveGlobalSettings()" class="w-full bg-blue-600 hover:bg-blue-500 py-3 mt-2 rounded-xl text-sm font-bold text-white transition shadow-lg shadow-blue-500/20">Сохранить изменения</button>
       </div>
     </div>
@@ -147,8 +123,23 @@
 
       <div id="tab-profile" class="tab-content hidden space-y-6">
         <div id="profile-content" class="bg-slate-800 rounded-2xl p-5 border border-slate-700/50 shadow-sm"><div class="text-center py-4 animate-pulse">Загрузка профиля...</div></div>
+      </div>
+
+      <!-- НОВАЯ ЭКСКЛЮЗИВНАЯ ВКЛАДКА АДМИНИСТРАТОРА -->
+      <div id="tab-admin" class="tab-content hidden space-y-4">
         
-        <div id="admin-panel" class="hidden bg-slate-800/80 border border-yellow-500/40 rounded-2xl p-5 shadow-lg relative overflow-hidden mt-4">
+        <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700/50 shadow-sm flex justify-between items-center mb-4">
+            <div>
+                <h2 class="text-sm font-bold text-white mb-0.5">Режим Администратора</h2>
+                <p class="text-[10px] text-slate-400">Показывать кнопки управления матчами</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="admin-mode-toggle" class="sr-only peer" onchange="toggleAdminMode(this.checked)" checked>
+              <div class="w-11 h-6 bg-slate-900 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500 border border-slate-600"></div>
+            </label>
+        </div>
+
+        <div id="admin-panel" class="bg-slate-800/80 border border-yellow-500/40 rounded-2xl p-5 shadow-lg relative overflow-hidden mt-2">
           <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-500 to-orange-500"></div>
           <h2 class="text-sm font-bold text-yellow-400 mb-4 flex items-center">👑 Панель Организатора Лиги</h2>
           <div class="bg-slate-900/50 p-3 rounded-xl border border-yellow-500/20 mb-4 space-y-2">
@@ -197,9 +188,11 @@
 
     <div class="fixed bottom-0 left-0 w-full bg-slate-900/95 backdrop-blur-md border-t border-slate-800 z-50">
       <div class="max-w-md mx-auto flex justify-around p-2 pb-safe">
-        <button onclick="switchTab('matches')" id="nav-matches" class="nav-btn flex flex-col items-center p-2 text-blue-500 transition w-1/3"><span class="text-2xl mb-1">⚽</span><span class="text-[10px] font-medium">Матчи</span></button>
-        <button onclick="switchTab('bracket')" id="nav-bracket" class="nav-btn flex flex-col items-center p-2 text-slate-500 transition w-1/3"><span class="text-2xl mb-1">🗺️</span><span class="text-[10px] font-medium">Обзор</span></button>
-        <button onclick="switchTab('profile')" id="nav-profile" class="nav-btn flex flex-col items-center p-2 text-slate-500 transition w-1/3"><span class="text-2xl mb-1">👤</span><span class="text-[10px] font-medium">Лига</span></button>
+        <button onclick="switchTab('matches')" id="nav-matches" class="nav-btn flex-1 flex flex-col items-center p-2 text-blue-500 transition"><span class="text-2xl mb-1">⚽</span><span class="text-[10px] font-medium">Матчи</span></button>
+        <button onclick="switchTab('bracket')" id="nav-bracket" class="nav-btn flex-1 flex flex-col items-center p-2 text-slate-500 transition"><span class="text-2xl mb-1">🗺️</span><span class="text-[10px] font-medium">Обзор</span></button>
+        <button onclick="switchTab('profile')" id="nav-profile" class="nav-btn flex-1 flex flex-col items-center p-2 text-slate-500 transition"><span class="text-2xl mb-1">👤</span><span class="text-[10px] font-medium">Лига</span></button>
+        <!-- КНОПКА ПОЯВИТСЯ ТОЛЬКО У АДМИНА -->
+        <button onclick="switchTab('admin')" id="nav-admin" class="nav-btn flex-1 hidden flex-col items-center p-2 text-slate-500 transition"><span class="text-2xl mb-1">⚙️</span><span class="text-[10px] font-medium">Управление</span></button>
       </div>
     </div>
   </div>
@@ -218,7 +211,9 @@
     const tgUser = window.Telegram.WebApp.initDataUnsafe?.user;
     const tgUsername = (tgUser && tgUser.username) ? tgUser.username : 'Гость';
     const telegramId = (tgUser && tgUser.id) ? tgUser.id : Math.floor(Math.random() * 1000000);
-    const ADMIN_ID = 438290253; 
+    
+    // МАССИВ АДМИНОВ. Сюда через запятую можно добавить ID твоих друзей-модераторов.
+    const ADMIN_IDS = [438290253]; 
     
     const SUPABASE_URL = 'https://kvsrxuibrovumaikqptk.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2c3J4dWlicm92dW1haWtxcHRrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDg3NzQ1NiwiZXhwIjoyMTAwNDUzNDU2fQ.zfFCppQZ35HzZigz3xIDrph4jUY_2M67-gnnC9y6AYg';
@@ -233,15 +228,15 @@
     let currentRound = 'Группы'; 
     let editModeMatchId = null; 
     let proposeModeMatchId = null;
+    
     let isAdminMode = false;
+    let adminEditMode = true; // Переменная для переключателя режима
+
     let activeScorerMatchId = null; 
     let activeScorerPlayerNum = null; 
     let activeScorersTemp = {};
     let scheduleMatchId = null;
 
-    // ==========================================
-    // ЛОББИ И ГЛОБАЛЬНЫЙ ПРОФИЛЬ
-    // ==========================================
     async function initApp() {
         let res = await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${telegramId}`, { headers: baseHeaders }); 
         let users = await res.json();
@@ -304,7 +299,6 @@
         document.getElementById('my-tournaments-list').innerHTML = myToursHtml || `<div class="text-xs text-slate-500 text-center py-4 bg-slate-800/50 rounded-xl border border-slate-700/50">Ты пока не участвуешь ни в одном турнире.</div>`;
         document.getElementById('public-tournaments-list').innerHTML = publicToursHtml || `<div class="text-xs text-slate-500 text-center py-4 bg-slate-800/50 rounded-xl border border-slate-700/50">Открытых турниров пока нет.</div>`;
 
-        // Рендер топа прогнозистов
         let topPredictors = await predRes.json();
         let predHtml = topPredictors.map((u, i) => {
             let medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '🏅';
@@ -324,6 +318,11 @@
     // ==========================================
     // ЛОГИКА ВНУТРИ ТУРНИРА
     // ==========================================
+    window.toggleAdminMode = async function(isChecked) {
+        adminEditMode = isChecked;
+        await loadTournamentData(); 
+    }
+
     async function enterTournament(id, name) {
         currentTourId = id; document.getElementById('lobby-screen').classList.add('hidden'); document.getElementById('lobby-screen').classList.remove('block'); document.getElementById('main-app').classList.remove('hidden'); document.getElementById('page-title').innerText = name; switchTab('matches'); await loadTournamentData();
     }
@@ -332,8 +331,20 @@
     async function loadTournamentData() {
         if (!currentTourId) return;
         let tRes = await fetch(`${SUPABASE_URL}/rest/v1/tournaments?id=eq.${currentTourId}`, { headers: baseHeaders }); currentTourData = (await tRes.json())[0];
-        isAdminMode = (telegramId === ADMIN_ID || telegramId === currentTourData.creator_id);
-        if (isAdminMode) { document.getElementById('admin-panel').classList.remove('hidden'); } else { document.getElementById('admin-panel').classList.add('hidden'); }
+        
+        isAdminMode = (ADMIN_IDS.includes(telegramId) || telegramId === currentTourData.creator_id);
+        
+        // УПРАВЛЕНИЕ ВИДИМОСТЬЮ ВКЛАДКИ АДМИНА
+        if (isAdminMode) { 
+            document.getElementById('nav-admin').classList.remove('hidden'); 
+            document.getElementById('nav-admin').classList.add('flex'); 
+            document.getElementById('admin-mode-toggle').checked = adminEditMode;
+        } else { 
+            document.getElementById('nav-admin').classList.add('hidden'); 
+            document.getElementById('nav-admin').classList.remove('flex'); 
+            adminEditMode = false;
+        }
+
         let uRes = await fetch(`${SUPABASE_URL}/rest/v1/users?select=*`, { headers: baseHeaders }); let baseUsers = await uRes.json();
         let tpRes = await fetch(`${SUPABASE_URL}/rest/v1/tournament_players?tournament_id=eq.${currentTourId}`, { headers: baseHeaders }); let tourPlayers = await tpRes.json();
         
@@ -357,7 +368,10 @@
             pHtml += pInG.map((u, i) => {
                 const isMe = u.base_id === telegramId; const m = i === 0 ? '1️⃣' : i === 1 ? '2️⃣' : i === 2 ? '3️⃣' : '⚽'; const pI = u.platform === 'PlayStation' ? '🎮 PS' : (u.platform === 'Xbox' ? '❎ Xbox' : '💻 PC');
                 let diff = (u.goals_for || 0) - (u.goals_against || 0); let diffStr = diff > 0 ? `+${diff}` : diff; let diffColor = diff > 0 ? 'text-green-400' : (diff < 0 ? 'text-red-400' : 'text-slate-300');
-                let adminTools = isAdminMode ? `<div class="flex space-x-2 pl-2 relative z-10"><button onclick="event.stopPropagation(); fetch('${SUPABASE_URL}/rest/v1/tournament_players?id=eq.${u.tp_id}', {method: 'PATCH', headers: baseHeaders, body: JSON.stringify({group_name: prompt('Группа:', 'Группа A')})}).then(loadTournamentData);" class="text-blue-400/70 hover:text-blue-400 px-2 py-1 bg-slate-900 rounded text-[10px] uppercase font-bold transition">⚙️</button></div>` : '<div class="text-slate-500 text-xs opacity-50">👁️</div>';
+                
+                // РЕДАКТИРОВАНИЕ ГРУПП (ТОЛЬКО ЕСЛИ АДМИН И РЕЖИМ ВКЛЮЧЕН)
+                let adminTools = (isAdminMode && adminEditMode) ? `<div class="flex space-x-2 pl-2 relative z-10"><button onclick="event.stopPropagation(); fetch('${SUPABASE_URL}/rest/v1/tournament_players?id=eq.${u.tp_id}', {method: 'PATCH', headers: baseHeaders, body: JSON.stringify({group_name: prompt('Группа:', 'Группа A')})}).then(loadTournamentData);" class="text-blue-400/70 hover:text-blue-400 px-2 py-1 bg-slate-900 rounded text-[10px] uppercase font-bold transition">⚙️</button></div>` : '<div class="text-slate-500 text-xs opacity-50">👁️</div>';
+                
                 return `<div onclick="openPlayerProfile(${u.base_id})" class="cursor-pointer p-4 rounded-xl border shadow-sm mb-3 transition hover:bg-slate-700/80 ${isMe ? 'border-blue-500/50 bg-blue-900/20' : 'border-slate-700/50 bg-slate-800'} relative"><div class="flex items-center justify-between mb-3"><div class="flex items-center overflow-hidden"><div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 text-blue-400 text-sm flex-shrink-0">${m}</div><div class="flex flex-col text-left truncate"><span class="font-bold text-slate-200 text-sm leading-tight truncate">${u.username || 'Аноним'}</span><span class="text-[10px] text-slate-400 mt-0.5 truncate">${pI}</span></div></div>${adminTools}</div><div class="grid grid-cols-4 gap-2 text-center text-xs bg-slate-900/50 p-2 rounded-lg text-slate-400 pointer-events-none"><div>Поб: <span class="text-white font-bold">${u.wins || 0}/${u.losses || 0}</span></div><div>Мячи: <span class="text-white font-bold">${u.goals_for || 0}:${u.goals_against || 0}</span></div><div>+/-: <span class="${diffColor} font-bold">${diffStr}</span></div><div>Очки: <span class="text-blue-400 font-bold">${(u.wins || 0) * 3}</span></div></div></div>`;
             }).join('');
         }
@@ -408,7 +422,8 @@
             linksHtml += '</div>'; bioHtml = `<div class="bg-slate-900/50 border border-slate-700/50 p-4 rounded-xl mb-5">${bioText}${linksHtml}</div>`;
         }
 
-        let kickBtn = (isAdminMode && user.base_id !== telegramId) ? `<button onclick="kickPlayer(${user.tp_id}, '${user.username}')" class="w-full mt-4 py-2 rounded-xl text-xs font-bold text-white bg-red-700 hover:bg-red-600 transition">🚪 Исключить из турнира</button>` : '';
+        // КНОПКА ИСКЛЮЧЕНИЯ ИГРОКА (ТОЛЬКО ДЛЯ АДМИНА С ВКЛЮЧЕННЫМ РЕЖИМОМ)
+        let kickBtn = (isAdminMode && adminEditMode && user.base_id !== telegramId) ? `<button onclick="kickPlayer(${user.tp_id}, '${user.username}')" class="w-full mt-4 py-2 rounded-xl text-xs font-bold text-white bg-red-700 hover:bg-red-600 transition">🚪 Исключить из турнира</button>` : '';
 
         return `
             <div class="flex items-center space-x-4 mb-5 pb-5 border-b border-slate-700/50">
@@ -484,23 +499,11 @@
             
             let playerActions = ''; let scheduleHtml = ''; let predictionHtml = '';
             
-            // ЛОГИКА ТОТАЛИЗАТОРА (Только если не участник)
             if (!isParticipant) {
-                let preds = m.predictions || {};
-                let myPred = preds[telegramId];
-                
+                let preds = m.predictions || {}; let myPred = preds[telegramId];
                 if (!m.is_completed) {
-                    if (myPred) {
-                        predictionHtml = `<div class="mt-3 pt-2 border-t border-slate-700/50 text-center text-[10px] text-purple-400 font-bold">🔮 Твой прогноз: ${myPred}</div>`;
-                    } else {
-                        predictionHtml = `
-                        <div class="mt-3 pt-3 border-t border-slate-700/50 flex flex-col space-y-2">
-                            <div class="text-[10px] text-purple-400 text-center font-bold uppercase">🔮 Кто победит? (+10 очков)</div>
-                            <div class="flex space-x-2">
-                                <button onclick="makePrediction(${m.id}, '${m.player1}')" class="flex-1 bg-purple-900/40 hover:bg-purple-600 border border-purple-500/30 py-1.5 rounded-lg text-xs font-bold text-purple-300 hover:text-white transition">${m.player1}</button>
-                                <button onclick="makePrediction(${m.id}, '${m.player2}')" class="flex-1 bg-purple-900/40 hover:bg-purple-600 border border-purple-500/30 py-1.5 rounded-lg text-xs font-bold text-purple-300 hover:text-white transition">${m.player2}</button>
-                            </div>
-                        </div>`;
+                    if (myPred) { predictionHtml = `<div class="mt-3 pt-2 border-t border-slate-700/50 text-center text-[10px] text-purple-400 font-bold">🔮 Твой прогноз: ${myPred}</div>`; } else {
+                        predictionHtml = `<div class="mt-3 pt-3 border-t border-slate-700/50 flex flex-col space-y-2"><div class="text-[10px] text-purple-400 text-center font-bold uppercase">🔮 Кто победит? (+10 очков)</div><div class="flex space-x-2"><button onclick="makePrediction(${m.id}, '${m.player1}')" class="flex-1 bg-purple-900/40 hover:bg-purple-600 border border-purple-500/30 py-1.5 rounded-lg text-xs font-bold text-purple-300 hover:text-white transition">${m.player1}</button><button onclick="makePrediction(${m.id}, '${m.player2}')" class="flex-1 bg-purple-900/40 hover:bg-purple-600 border border-purple-500/30 py-1.5 rounded-lg text-xs font-bold text-purple-300 hover:text-white transition">${m.player2}</button></div></div>`;
                     }
                 } else if (m.is_completed && myPred) {
                     let actualWinner = (m.score1 > m.score2) ? m.player1 : ((m.score2 > m.score1) ? m.player2 : 'Ничья');
@@ -535,8 +538,9 @@
                 if (s1Text || s2Text || btn1 || btn2) { scorersHtml = `<div class="mt-3 pt-2 border-t border-slate-700/50 flex justify-between text-[10px] text-slate-400 leading-tight"><div class="w-1/2 pr-1 text-left">${s1Text ? `<span class="text-slate-300">⚽ ${s1Text}</span>` : ''} ${btn1}</div><div class="w-1/2 pl-1 text-right">${s2Text ? `<span class="text-slate-300">${s2Text} ⚽</span>` : ''} ${btn2}</div></div>`; } 
             } 
 
+            // БЛОК АДМИНА
             let adminActions = ''; 
-            if (isAdminMode) { 
+            if (isAdminMode && adminEditMode) { 
                 if (m.is_completed) { adminActions = `<div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-2"><div class="text-center text-xs text-green-400 font-semibold">✅ Завершен</div><button onclick="rollbackMatch(${m.id}, '${m.player1}', '${m.player2}', ${m.score1}, ${m.score2})" class="bg-yellow-600/30 hover:bg-yellow-600/50 text-yellow-300 py-1.5 rounded-lg text-xs font-semibold transition">⏪ Отменить (Орг)</button></div>`; } 
                 else if (m.is_disputed) { adminActions = `<div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-2"><div class="text-[10px] text-red-500 text-center font-bold uppercase tracking-wider">⚠️ Спорный матч</div><div class="flex justify-center space-x-2"><button onclick="changeScore(${m.id}, ${m.score1 + 1}, ${m.score2}, '${m.player1}', '${m.player2}')" class="bg-slate-700 px-2 py-1 rounded text-xs">+1 к ${m.player1}</button><button onclick="changeScore(${m.id}, ${m.score1}, ${m.score2 + 1}, '${m.player1}', '${m.player2}')" class="bg-slate-700 px-2 py-1 rounded text-xs">+1 к ${m.player2}</button><button onclick="resetScore(${m.id}, '${m.player1}', '${m.player2}')" class="bg-red-900/40 text-red-300 px-2 py-1 rounded text-xs">Сброс</button></div><button onclick="resolveDispute(${m.id}, '${m.player1}', '${m.player2}', ${m.score1}, ${m.score2})" class="bg-red-600 hover:bg-red-500 py-2 rounded-lg text-xs font-semibold text-white transition">⚖️ Разрешить спор (Принудительно)</button></div>`; } 
                 else if (m.proposed_by) { adminActions = `<div class="mt-4 pt-3 border-t border-slate-700/50 flex flex-col space-y-2"><div class="text-[10px] text-yellow-500 text-center font-bold uppercase tracking-wider">Ожидает подтверждения</div><button onclick="confirmScorePlayer(${m.id}, '${m.player1}', '${m.player2}', ${m.proposed_score1}, ${m.proposed_score2})" class="bg-green-600 hover:bg-green-500 py-2 rounded-lg text-xs font-semibold text-white transition">✅ Подтвердить принудительно</button><button onclick="rejectScore(${m.id})" class="bg-slate-700 hover:bg-slate-600 py-1.5 rounded-lg text-xs font-semibold text-white transition">Отменить счет (Орг)</button></div>`; } 
@@ -547,7 +551,7 @@
                 <div class="bg-slate-800 rounded-2xl p-5 border ${m.is_disputed ? 'border-red-500/80 shadow-red-500/20' : 'border-slate-700/50'} shadow-sm ${m.is_completed ? 'opacity-80' : ''}">
                     <div class="flex justify-between items-center mb-2">
                         <span class="text-xs ${m.is_disputed ? 'text-red-400 font-bold' : 'text-slate-400'}">${m.round}</span>
-                        ${(isAdminMode && !m.is_completed) ? `<div class="space-x-2"><button onclick="editMatchMode(${m.id})" class="text-slate-400 hover:text-white text-xs">✏️</button><button onclick="deleteMatch(${m.id})" class="text-red-400/70 hover:text-red-400 text-xs">✕</button></div>` : ''}
+                        ${(isAdminMode && adminEditMode && !m.is_completed) ? `<div class="space-x-2"><button onclick="editMatchMode(${m.id})" class="text-slate-400 hover:text-white text-xs">✏️</button><button onclick="deleteMatch(${m.id})" class="text-red-400/70 hover:text-red-400 text-xs">✕</button></div>` : ''}
                     </div>
                     <div class="flex justify-between items-center font-bold text-slate-200">
                         <span class="w-2/5 text-right truncate pr-2">${m.player1}</span><span class="w-1/5 flex justify-center">${displayScore}</span><span class="w-2/5 text-left truncate pl-2">${m.player2}</span>
@@ -612,7 +616,6 @@
             await checkAchievements(p1Name, s1, s2, finishedMatch.round);
             await checkAchievements(p2Name, s2, s1, finishedMatch.round);
 
-            // Обработка прогнозов
             let actualWinner = null;
             if (s1 > s2) actualWinner = p1Name;
             if (s2 > s1) actualWinner = p2Name;
