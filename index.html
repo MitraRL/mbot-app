@@ -35,7 +35,7 @@
     </div>
   </div>
 
-  <!-- ЭКРАН 1: ЛОББИ (ВЫБОР ТУРНИРА) -->
+  <!-- ЭКРАН 1: ЛОББИ (ВЫБОР ТУРНИРА И ТОП ПРОГНОЗОВ) -->
   <div id="lobby-screen" class="block min-h-screen p-4 pb-24 max-w-md mx-auto">
       
       <div class="flex justify-between items-center mb-8 bg-slate-800/50 p-3 rounded-2xl border border-slate-700/50">
@@ -44,20 +44,25 @@
           <div>
             <div class="text-sm font-bold text-white" id="lobby-username">Загрузка...</div>
             <div class="text-[10px] text-blue-400 font-semibold" id="lobby-platform">...</div>
+            <div class="text-[10px] text-purple-400 font-bold" id="lobby-predictions-score">🔮 Очков: 0</div>
           </div>
         </div>
         <button onclick="openGlobalProfileModal()" class="p-2.5 bg-slate-700 hover:bg-slate-600 rounded-xl border border-slate-600 transition shadow-sm text-sm">⚙️ Профиль</button>
       </div>
 
-      <div class="mb-8">
-          <h2 class="text-xs text-blue-400 font-bold uppercase tracking-widest mb-3 pl-1 border-l-2 border-blue-500">Твои турниры</h2>
-          <div id="my-tournaments-list" class="space-y-3"><div class="text-center py-6 animate-pulse text-slate-500 text-sm">Загрузка...</div></div>
-      </div>
-
-      <div>
-          <h2 class="text-xs text-green-400 font-bold uppercase tracking-widest mb-3 pl-1 border-l-2 border-green-500">Открытые турниры</h2>
-          <p class="text-[10px] text-slate-400 mb-3">Здесь показаны публичные лиги, к которым можно присоединиться.</p>
-          <div id="public-tournaments-list" class="space-y-3"><div class="text-center py-6 animate-pulse text-slate-500 text-sm">Загрузка...</div></div>
+      <div class="mb-8 grid grid-cols-1 gap-6">
+        <div>
+            <h2 class="text-xs text-blue-400 font-bold uppercase tracking-widest mb-3 pl-1 border-l-2 border-blue-500">Твои турниры</h2>
+            <div id="my-tournaments-list" class="space-y-3"><div class="text-center py-6 animate-pulse text-slate-500 text-sm">Загрузка...</div></div>
+        </div>
+        <div>
+            <h2 class="text-xs text-green-400 font-bold uppercase tracking-widest mb-3 pl-1 border-l-2 border-green-500">Открытые турниры</h2>
+            <div id="public-tournaments-list" class="space-y-3"><div class="text-center py-6 animate-pulse text-slate-500 text-sm">Загрузка...</div></div>
+        </div>
+        <div>
+            <h2 class="text-xs text-purple-400 font-bold uppercase tracking-widest mb-3 pl-1 border-l-2 border-purple-500">🔮 Топ прогнозистов</h2>
+            <div id="lobby-predictors" class="space-y-2"><div class="text-center py-4 animate-pulse text-slate-500 text-sm">Загрузка...</div></div>
+        </div>
       </div>
   </div>
 
@@ -216,7 +221,7 @@
     const ADMIN_ID = 438290253; 
     
     const SUPABASE_URL = 'https://kvsrxuibrovumaikqptk.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2c3J4dWlicm92dW1haWtxcHRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4Nzc0NTYsImV4cCI6MjEwMDQ1MzQ1Nn0.uKkIbZi7I0Q0jL0oMMq5k4ABQ_ge18yJo7tYSB_PYRI';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2c3J4dWlicm92dW1haWtxcHRrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDg3NzQ1NiwiZXhwIjoyMTAwNDUzNDU2fQ.zfFCppQZ35HzZigz3xIDrph4jUY_2M67-gnnC9y6AYg';
     const baseHeaders = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' };
 
     let globalMe = null; 
@@ -251,6 +256,7 @@
         document.getElementById('lobby-username').innerText = globalMe.username || 'Аноним';
         document.getElementById('lobby-platform').innerText = globalMe.platform;
         document.getElementById('lobby-avatar').innerText = globalMe.username ? globalMe.username.charAt(0).toUpperCase() : 'U';
+        document.getElementById('lobby-predictions-score').innerText = `🔮 Очков прогнозов: ${globalMe.prediction_points || 0}`;
 
         document.getElementById('set-nickname').value = globalMe.username || ''; 
         document.getElementById('set-platform').value = globalMe.platform;
@@ -282,8 +288,13 @@
     async function loadLobby() {
         document.getElementById('main-app').classList.add('hidden'); document.getElementById('lobby-screen').classList.remove('hidden'); document.getElementById('lobby-screen').classList.add('block');
         currentTourId = null;
-        let [tRes, tpRes] = await Promise.all([ fetch(`${SUPABASE_URL}/rest/v1/tournaments?status=eq.active&order=created_at.desc`, { headers: baseHeaders }), fetch(`${SUPABASE_URL}/rest/v1/tournament_players?user_id=eq.${telegramId}`, { headers: baseHeaders }) ]);
+        let [tRes, tpRes, predRes] = await Promise.all([ 
+            fetch(`${SUPABASE_URL}/rest/v1/tournaments?status=eq.active&order=created_at.desc`, { headers: baseHeaders }), 
+            fetch(`${SUPABASE_URL}/rest/v1/tournament_players?user_id=eq.${telegramId}`, { headers: baseHeaders }),
+            fetch(`${SUPABASE_URL}/rest/v1/users?prediction_points=gt.0&order=prediction_points.desc&limit=5`, { headers: baseHeaders })
+        ]);
         let activeTours = await tRes.json(); let myTp = await tpRes.json(); myTourIds = myTp.map(tp => tp.tournament_id);
+        
         let myToursHtml = ''; let publicToursHtml = '';
         activeTours.forEach(t => {
             let isMine = myTourIds.includes(t.id); let isCreator = t.creator_id === telegramId; let badge = isCreator ? `<span class="bg-yellow-500/20 text-yellow-500 text-[9px] px-1.5 py-0.5 rounded font-bold ml-2">Организатор</span>` : '';
@@ -292,6 +303,14 @@
         });
         document.getElementById('my-tournaments-list').innerHTML = myToursHtml || `<div class="text-xs text-slate-500 text-center py-4 bg-slate-800/50 rounded-xl border border-slate-700/50">Ты пока не участвуешь ни в одном турнире.</div>`;
         document.getElementById('public-tournaments-list').innerHTML = publicToursHtml || `<div class="text-xs text-slate-500 text-center py-4 bg-slate-800/50 rounded-xl border border-slate-700/50">Открытых турниров пока нет.</div>`;
+
+        // Рендер топа прогнозистов
+        let topPredictors = await predRes.json();
+        let predHtml = topPredictors.map((u, i) => {
+            let medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '🏅';
+            return `<div class="flex justify-between items-center bg-slate-800 p-3 rounded-xl border border-slate-700/50 shadow-sm"><div class="flex items-center"><span class="mr-3 text-lg">${medal}</span><span class="text-sm font-bold text-white">${u.username}</span></div><span class="text-sm font-bold text-purple-400">${u.prediction_points} <span class="text-[10px]">очков</span></span></div>`;
+        }).join('');
+        document.getElementById('lobby-predictors').innerHTML = predHtml || `<div class="text-xs text-slate-500 text-center py-4 bg-slate-800/50 rounded-xl border border-slate-700/50">Пока никто не делал верных прогнозов.</div>`;
     }
 
     async function handleTournamentClick(id, name, isMine, isPrivate) {
@@ -366,26 +385,14 @@
         if (user.ea_id) {
             eaIdHtml = `
             <div class="mb-5 bg-indigo-900/30 border border-indigo-500/30 p-3 rounded-xl flex justify-between items-center shadow-inner">
-                <div class="flex items-center space-x-3">
-                    <span class="text-2xl">🎮</span>
-                    <div>
-                        <div class="text-[9px] uppercase text-indigo-400 font-bold tracking-wider">EA ID для инвайта</div>
-                        <div class="text-sm font-bold text-white">${user.ea_id}</div>
-                    </div>
-                </div>
+                <div class="flex items-center space-x-3"><span class="text-2xl">🎮</span><div><div class="text-[9px] uppercase text-indigo-400 font-bold tracking-wider">EA ID для инвайта</div><div class="text-sm font-bold text-white">${user.ea_id}</div></div></div>
                 <button onclick="navigator.clipboard.writeText('${user.ea_id}'); Telegram.WebApp.showAlert('EA ID скопирован в буфер обмена!');" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-2 rounded-lg text-xs font-bold text-white transition shadow-md">Копировать</button>
             </div>`;
         }
 
         let badgesHtml = '';
         if (user.badges && user.badges.length > 0) {
-            badgesHtml = `
-                <div class="mb-5">
-                    <h3 class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-2">🏅 Достижения</h3>
-                    <div class="flex flex-wrap gap-2">
-                        ${user.badges.map(b => `<span class="bg-indigo-900/50 border border-indigo-500/30 text-indigo-300 px-2.5 py-1 rounded-lg text-xs font-bold shadow-sm">${b}</span>`).join('')}
-                    </div>
-                </div>`;
+            badgesHtml = `<div class="mb-5"><h3 class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-2">🏅 Достижения</h3><div class="flex flex-wrap gap-2">${user.badges.map(b => `<span class="bg-indigo-900/50 border border-indigo-500/30 text-indigo-300 px-2.5 py-1 rounded-lg text-xs font-bold shadow-sm">${b}</span>`).join('')}</div></div>`;
         }
 
         let bioHtml = ''; let hasSocials = user.username || user.youtube_link || user.twitch_link || user.tg_channel;
@@ -411,9 +418,7 @@
                     <div class="inline-block mt-1 px-2 py-0.5 bg-blue-900/50 border border-blue-500/30 rounded text-xs text-blue-400 font-semibold">${user.platform}</div>
                 </div>
             </div>
-            ${eaIdHtml}
-            ${bioHtml}
-            ${badgesHtml}
+            ${eaIdHtml}${bioHtml}${badgesHtml}
             <div class="mb-6">
                 <h3 class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-2">Статистика в этой лиге</h3>
                 <div class="grid grid-cols-4 gap-2 text-center bg-slate-900/80 p-3 rounded-xl border border-slate-700/50 shadow-inner">
@@ -457,6 +462,15 @@
     window.agreeSchedule = async function(id, timeStr) { let m = allMatches.find(x => x.id === id); let myName = getMyName(); let oppName = (m.player1 === myName) ? m.player2 : m.player1; await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ schedule_status: 'agreed' }) }); await sendNotification(oppName, `✅ Соперник согласился сыграть матч: **${timeStr}**. Не опаздывай!`); await loadTournamentData(); }
     window.clearSchedule = async function(id) { await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ scheduled_time: null, schedule_status: null }) }); await loadTournamentData(); }
 
+    window.makePrediction = async function(matchId, predictedWinner) {
+        let m = allMatches.find(x => x.id === matchId);
+        let preds = m.predictions || {};
+        preds[telegramId] = predictedWinner;
+        await fetch(`${SUPABASE_URL}/rest/v1/matches?id=eq.${matchId}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ predictions: preds }) });
+        Telegram.WebApp.showAlert('Прогноз успешно принят!');
+        await loadTournamentData();
+    }
+
     function renderMatches() { 
         const container = document.getElementById('db-matches'); const filteredMatches = allMatches.filter(m => m.round === currentRound); 
         if (filteredMatches.length === 0) { container.innerHTML = `<div class="text-center text-slate-500 text-sm bg-slate-800/50 p-4 rounded-xl border border-slate-700/30 flex flex-col items-center"><span class="text-2xl mb-2">🤷‍♂️</span><span>Матчей пока нет.</span></div>`; return; } 
@@ -468,7 +482,33 @@
             const isParticipant = (m.player1 === myName || m.player2 === myName); 
             let displayScore = m.is_completed ? `<span class="text-blue-400 text-lg">${m.score1} : ${m.score2}</span>` : ((m.proposed_by && !m.is_disputed) ? `<div class="text-center flex flex-col items-center"><span class="text-yellow-400 text-lg">${m.proposed_score1} : ${m.proposed_score2}</span><span class="text-[9px] text-yellow-500/80 uppercase">Ожидает</span></div>` : (m.is_disputed ? `<span class="text-red-500 text-lg font-bold">Спор</span>` : `<span class="text-slate-500 text-lg">0 : 0</span>`)); 
             
-            let playerActions = ''; let scheduleHtml = ''; 
+            let playerActions = ''; let scheduleHtml = ''; let predictionHtml = '';
+            
+            // ЛОГИКА ТОТАЛИЗАТОРА (Только если не участник)
+            if (!isParticipant) {
+                let preds = m.predictions || {};
+                let myPred = preds[telegramId];
+                
+                if (!m.is_completed) {
+                    if (myPred) {
+                        predictionHtml = `<div class="mt-3 pt-2 border-t border-slate-700/50 text-center text-[10px] text-purple-400 font-bold">🔮 Твой прогноз: ${myPred}</div>`;
+                    } else {
+                        predictionHtml = `
+                        <div class="mt-3 pt-3 border-t border-slate-700/50 flex flex-col space-y-2">
+                            <div class="text-[10px] text-purple-400 text-center font-bold uppercase">🔮 Кто победит? (+10 очков)</div>
+                            <div class="flex space-x-2">
+                                <button onclick="makePrediction(${m.id}, '${m.player1}')" class="flex-1 bg-purple-900/40 hover:bg-purple-600 border border-purple-500/30 py-1.5 rounded-lg text-xs font-bold text-purple-300 hover:text-white transition">${m.player1}</button>
+                                <button onclick="makePrediction(${m.id}, '${m.player2}')" class="flex-1 bg-purple-900/40 hover:bg-purple-600 border border-purple-500/30 py-1.5 rounded-lg text-xs font-bold text-purple-300 hover:text-white transition">${m.player2}</button>
+                            </div>
+                        </div>`;
+                    }
+                } else if (m.is_completed && myPred) {
+                    let actualWinner = (m.score1 > m.score2) ? m.player1 : ((m.score2 > m.score1) ? m.player2 : 'Ничья');
+                    let isCorrect = myPred === actualWinner;
+                    predictionHtml = `<div class="mt-3 pt-2 border-t border-slate-700/50 text-center text-[10px] font-bold ${isCorrect ? 'text-green-400' : 'text-red-400'}">🔮 Прогноз: ${myPred} (${isCorrect ? '+10 очков' : 'Мимо'})</div>`;
+                }
+            }
+
             if (!m.is_completed && isParticipant) { 
                 if (!m.is_disputed && !m.proposed_by) {
                     let myRole = (m.player1 === myName) ? 'p1' : 'p2'; let oppRole = (m.player1 === myName) ? 'p2' : 'p1';
@@ -512,7 +552,7 @@
                     <div class="flex justify-between items-center font-bold text-slate-200">
                         <span class="w-2/5 text-right truncate pr-2">${m.player1}</span><span class="w-1/5 flex justify-center">${displayScore}</span><span class="w-2/5 text-left truncate pl-2">${m.player2}</span>
                     </div>
-                    ${scheduleHtml}${scorersHtml}${playerActions}${adminActions}
+                    ${scheduleHtml}${predictionHtml}${scorersHtml}${playerActions}${adminActions}
                 </div>`; 
         }).join(''); 
     }
@@ -535,21 +575,15 @@
     async function checkAchievements(uName, myS, oppS, round) {
         let u = allUsers.find(x => x.username === uName);
         if (!u || !u.base_id) return;
-        
-        let b = u.badges || [];
-        let newB = [];
-        
+        let b = u.badges || []; let newB = [];
         if (myS > oppS && oppS === 0 && !b.includes('🚌 Автобус')) newB.push('🚌 Автобус');
         if (myS - oppS >= 4 && !b.includes('🔥 Каток')) newB.push('🔥 Каток');
         if (myS > oppS && round === 'Финал' && !b.includes('🏆 Чемпион')) newB.push('🏆 Чемпион');
-        
         if (newB.length > 0) {
             let updatedB = [...b, ...newB];
             await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${u.base_id}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ badges: updatedB }) });
             u.badges = updatedB;
-            for(let badge of newB) {
-                await sendNotification(uName, `🏅 Поздравляем! Разблокировано достижение: **${badge}**! Загляни в свой профиль на платформе!`);
-            }
+            for(let badge of newB) { await sendNotification(uName, `🏅 Поздравляем! Разблокировано достижение: **${badge}**! Загляни в свой профиль на платформе!`); }
         }
     }
 
@@ -577,6 +611,26 @@
         if (finishedMatch) {
             await checkAchievements(p1Name, s1, s2, finishedMatch.round);
             await checkAchievements(p2Name, s2, s1, finishedMatch.round);
+
+            // Обработка прогнозов
+            let actualWinner = null;
+            if (s1 > s2) actualWinner = p1Name;
+            if (s2 > s1) actualWinner = p2Name;
+            
+            if (actualWinner && finishedMatch.predictions) {
+                for (let uid in finishedMatch.predictions) {
+                    if (finishedMatch.predictions[uid] === actualWinner) {
+                        fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${uid}`, { headers: baseHeaders })
+                          .then(res => res.json())
+                          .then(data => {
+                              if (data && data.length > 0) {
+                                  let newPoints = (data[0].prediction_points || 0) + 10;
+                                  fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${uid}`, { method: 'PATCH', headers: baseHeaders, body: JSON.stringify({ prediction_points: newPoints }) });
+                              }
+                          });
+                    }
+                }
+            }
         }
 
         if (finishedMatch && finishedMatch.round !== 'Группы' && finishedMatch.round !== 'Финал') { await checkAndAdvancePlayoffs(finishedMatch.round); } 
