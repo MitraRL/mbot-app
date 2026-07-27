@@ -60,6 +60,15 @@
             <div id="lobby-predictors" class="space-y-2"><div class="text-center py-4 animate-pulse text-slate-500 text-sm">Загрузка...</div></div>
         </div>
       </div>
+
+      <!-- ПАНЕЛЬ АРХИВА ДЛЯ АДМИНА -->
+      <div id="admin-archive-section" class="hidden mt-8 mb-8 border-t border-slate-800 pt-6">
+          <h2 class="text-xs text-red-400 font-bold uppercase tracking-widest mb-3 pl-1 border-l-2 border-red-500 flex items-center">
+              🗑 Архив турниров <span class="ml-2 bg-red-900/50 text-red-300 px-1.5 py-0.5 rounded text-[8px]">Только Админ</span>
+          </h2>
+          <p class="text-[10px] text-slate-500 mb-3 pl-1">Удаление турнира сотрет его статистику из историй всех игроков.</p>
+          <div id="admin-archive-list" class="space-y-2"></div>
+      </div>
   </div>
 
   <div id="global-settings-modal" class="hidden fixed inset-0 z-[70] bg-slate-900/95 backdrop-blur-sm flex justify-center items-end sm:items-center p-4">
@@ -155,7 +164,10 @@
                 <button id="btn-join-tour" onclick="joinTournamentAdmin()" class="hidden w-full bg-blue-600 hover:bg-blue-500 py-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">🏃‍♂️</span> Стать участником турнира</button>
 
                 <button onclick="deleteAllMatches()" class="w-full bg-red-900/60 hover:bg-red-800 py-2 rounded-lg text-xs font-bold text-red-300 hover:text-white transition flex justify-center items-center border border-red-500/30"><span class="mr-2">🗑</span> Сбросить ВСЕ матчи</button>
-                <button onclick="archiveTournament()" class="w-full bg-green-600/80 hover:bg-green-500 py-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">🏁</span> Завершить Турнир</button>
+                <button onclick="archiveTournament()" class="w-full bg-green-600/80 hover:bg-green-500 py-2 rounded-lg text-xs font-bold text-white transition flex justify-center items-center"><span class="mr-2">🏁</span> Завершить Турнир (В Архив)</button>
+                
+                <!-- НОВАЯ КНОПКА ПОЛНОГО УДАЛЕНИЯ -->
+                <button onclick="deleteTournamentFully(currentTourId, currentTourData.name)" class="w-full bg-slate-800 hover:bg-slate-700 py-2 rounded-lg text-xs font-bold text-red-400 hover:text-red-300 transition flex justify-center items-center border border-slate-600 mt-2"><span class="mr-2">💣</span> Удалить этот турнир полностью</button>
             </div>
           </div>
           <div class="space-y-3 pt-3 border-t border-slate-700/50">
@@ -278,24 +290,19 @@
     async function loadLobby() {
         document.getElementById('main-app').classList.add('hidden'); document.getElementById('lobby-screen').classList.remove('hidden'); document.getElementById('lobby-screen').classList.add('block');
         currentTourId = null;
+        
         let [tRes, tpRes, predRes] = await Promise.all([ fetch(`${SUPABASE_URL}/rest/v1/tournaments?status=eq.active&order=created_at.desc`, { headers: baseHeaders }), fetch(`${SUPABASE_URL}/rest/v1/tournament_players?user_id=eq.${telegramId}`, { headers: baseHeaders }), fetch(`${SUPABASE_URL}/rest/v1/users?prediction_points=gt.0&order=prediction_points.desc&limit=5`, { headers: baseHeaders }) ]);
         let activeTours = await tRes.json(); let myTp = await tpRes.json(); myTourIds = myTp.map(tp => tp.tournament_id);
         
         let myToursHtml = ''; let publicToursHtml = '';
         activeTours.forEach(t => {
-            let isPlayer = myTourIds.includes(t.id); 
-            let isCreator = t.creator_id === telegramId; 
-            let isGlobalAdmin = ADMIN_IDS.includes(telegramId);
-            let isOfficial = ADMIN_IDS.includes(t.creator_id);
-            let canManage = isCreator || isGlobalAdmin;
-
+            let isPlayer = myTourIds.includes(t.id); let isCreator = t.creator_id === telegramId; let isGlobalAdmin = ADMIN_IDS.includes(telegramId); let isOfficial = ADMIN_IDS.includes(t.creator_id); let canManage = isCreator || isGlobalAdmin;
             let badge = isCreator ? `<span class="bg-yellow-500/20 text-yellow-500 text-[9px] px-1.5 py-0.5 rounded font-bold ml-2">Организатор</span>` : '';
             let officialBadge = isOfficial ? `<span class="bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[9px] px-2 py-0.5 rounded-full font-bold ml-2 shadow-lg shadow-orange-500/30">👑 PRO LIGA</span>` : '';
             let formatBadge = t.format === '2x2' ? `<span class="bg-blue-600/30 text-blue-300 text-[9px] px-1.5 py-0.5 rounded font-bold ml-2 border border-blue-500/30">👥 2x2</span>` : `<span class="bg-slate-600/30 text-slate-300 text-[9px] px-1.5 py-0.5 rounded font-bold ml-2 border border-slate-500/30">👤 1x1</span>`;
             let borderClass = isOfficial ? 'border-orange-500/50 shadow-orange-500/10' : 'border-slate-700/50';
 
             let card = `<div onclick="handleTournamentClick(${t.id}, '${t.name}', ${isPlayer}, ${t.is_private}, ${canManage})" class="bg-slate-800 p-4 rounded-xl border ${borderClass} shadow-md mb-3 cursor-pointer hover:bg-slate-700 transition relative overflow-hidden flex justify-between items-center">${isPlayer ? '<div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>' : ''}<div><h3 class="text-sm font-bold text-white flex items-center flex-wrap gap-y-1">${t.name} ${officialBadge} ${badge} ${formatBadge}</h3><p class="text-[10px] text-slate-400 mt-1">${t.is_private ? '🔒 Закрытая лига' : '🔓 Открытая лига'}</p></div><div class="text-xl">👉</div></div>`;
-            
             if (isPlayer || canManage) myToursHtml += card; else if (!t.is_private) publicToursHtml += card;
         });
         document.getElementById('my-tournaments-list').innerHTML = myToursHtml || `<div class="text-xs text-slate-500 text-center py-4 bg-slate-800/50 rounded-xl border border-slate-700/50">Ты пока не участвуешь ни в одном турнире.</div>`;
@@ -304,6 +311,29 @@
         let topPredictors = await predRes.json();
         let predHtml = topPredictors.map((u, i) => { let medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '🏅'; return `<div class="flex justify-between items-center bg-slate-800 p-3 rounded-xl border border-slate-700/50 shadow-sm"><div class="flex items-center"><span class="mr-3 text-lg">${medal}</span><span class="text-sm font-bold text-white">${u.username}</span></div><span class="text-sm font-bold text-purple-400">${u.prediction_points} <span class="text-[10px]">очков</span></span></div>`; }).join('');
         document.getElementById('lobby-predictors').innerHTML = predHtml || `<div class="text-xs text-slate-500 text-center py-4 bg-slate-800/50 rounded-xl border border-slate-700/50">Пока никто не делал верных прогнозов.</div>`;
+
+        // --- ЛОГИКА ДЛЯ АРХИВА АДМИНА ---
+        if (ADMIN_IDS.includes(telegramId)) {
+            let aRes = await fetch(`${SUPABASE_URL}/rest/v1/tournaments?status=eq.completed&order=created_at.desc`, { headers: baseHeaders });
+            let archivedTours = await aRes.json();
+            
+            if (archivedTours.length > 0) {
+                let archivedHtml = archivedTours.map(t => `
+                    <div class="bg-slate-800/80 p-3 rounded-xl border border-red-500/30 flex justify-between items-center shadow-sm">
+                        <div class="overflow-hidden">
+                            <div class="text-sm text-white font-bold truncate pr-2">${t.name}</div>
+                            <div class="text-[9px] text-slate-400 mt-0.5">В архиве</div>
+                        </div>
+                        <button onclick="deleteTournamentFully(${t.id}, '${t.name}')" class="bg-red-900/60 hover:bg-red-800 border border-red-500/30 text-red-300 hover:text-white px-3 py-2 rounded-lg text-xs font-bold transition flex-shrink-0 shadow-md">Удалить навсегда</button>
+                    </div>
+                `).join('');
+                document.getElementById('admin-archive-section').classList.remove('hidden');
+                document.getElementById('admin-archive-list').innerHTML = archivedHtml;
+            } else {
+                document.getElementById('admin-archive-section').classList.add('hidden');
+                document.getElementById('admin-archive-list').innerHTML = '';
+            }
+        }
     }
 
     async function handleTournamentClick(id, name, isPlayer, isPrivate, canManage) { 
@@ -315,6 +345,32 @@
     async function enterTournament(id, name) { currentTourId = id; document.getElementById('lobby-screen').classList.add('hidden'); document.getElementById('lobby-screen').classList.remove('block'); document.getElementById('main-app').classList.remove('hidden'); switchTab('matches'); await loadTournamentData(); }
     
     function returnToLobby() { currentTourId = null; loadLobby(); }
+
+    // ГЛОБАЛЬНАЯ ФУНКЦИЯ УДАЛЕНИЯ ТУРНИРА НАВСЕГДА
+    window.deleteTournamentFully = function(id, name) {
+        Telegram.WebApp.showConfirm(`БЕЗВОЗВРАТНО удалить турнир "${name}"? Это полностью сотрет статистику турнира из историй всех игроков!`, async function(c) {
+            if(!c) return;
+            try {
+                // 1. Вычищаем историю из профилей
+                await fetch(`${SUPABASE_URL}/rest/v1/player_history?tournament_name=eq.${encodeURIComponent(name)}`, { method: 'DELETE', headers: baseHeaders });
+                // 2. Удаляем матчи
+                await fetch(`${SUPABASE_URL}/rest/v1/matches?tournament_id=eq.${id}`, { method: 'DELETE', headers: baseHeaders });
+                // 3. Удаляем участников
+                await fetch(`${SUPABASE_URL}/rest/v1/tournament_players?tournament_id=eq.${id}`, { method: 'DELETE', headers: baseHeaders });
+                // 4. Удаляем сам турнир
+                await fetch(`${SUPABASE_URL}/rest/v1/tournaments?id=eq.${id}`, { method: 'DELETE', headers: baseHeaders });
+                
+                Telegram.WebApp.showAlert("✅ Турнир и его статистика полностью удалены.");
+                if (currentTourId === id) {
+                    returnToLobby();
+                } else {
+                    await loadLobby();
+                }
+            } catch(e) {
+                Telegram.WebApp.showAlert("❌ Ошибка при удалении: " + e.message);
+            }
+        });
+    }
 
     async function loadTournamentData() {
         if (!currentTourId) return;
